@@ -50,7 +50,7 @@ function addQSO() {
   newQSO.value.theirCall = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
   newQSO.value.sentRST = newQSO.value.sentRST.replace(/\s+/g, '')
   newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
-  newQSO.value.theirState = newQSO.value.theirState.replace(/\s+/g, '')
+  newQSO.value.theirState = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
 
   let validQSO = true
   //Perform Input Validation
