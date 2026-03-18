@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, nextTick, watch, useTemplateRef } from 'vue';
+import { ref, nextTick, watch, useTemplateRef, computed } from 'vue';
+import { useQsoUtils } from '../composables/useQsoUtils';
 
 interface QSO {
     date: string;
@@ -10,33 +11,80 @@ interface QSO {
 }
 
 const tableContainer = useTemplateRef('tableContainer');
-
 const theirCallInput = useTemplateRef('theirCallInput');
+
+const theirCallError = computed(() => {
+    return !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase());
+});
+
+const sentRstError = computed(() => {
+    return !useQsoUtils().validateRST(newQSO.value.sentRST);
+});
+
+const receivedRstError = computed(() => {
+    return !useQsoUtils().validateRST(newQSO.value.receivedRST);
+});
+
+const stateError = computed(() => {
+    return !useQsoUtils().validateState(newQSO.value.theirState);
+});
 
 const qsoList = ref<QSO[]>([]);
 
 const newQSO = ref<QSO>({
-  date: '',
-  theirCall: '',
-  sentRST: '',
-  receivedRST: '',
-  theirState: '',
-});
-
-function addQSO() {
-  newQSO.value.date = new Date().toLocaleTimeString('en-US', {timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit'})+'z';
-  qsoList.value.push(newQSO.value);
-  newQSO.value = {
     date: '',
     theirCall: '',
     sentRST: '',
     receivedRST: '',
     theirState: '',
-  };
+});
 
-  if (theirCallInput.value) {
-    theirCallInput.value.focus();
-  }
+function addQSO() {
+    newQSO.value.date = new Date().toLocaleTimeString('en-US', {timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit'})+'z';
+    newQSO.value.theirCall = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, "");
+    newQSO.value.sentRST = newQSO.value.sentRST.replace(/\s+/g, "");
+    newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, "");
+    newQSO.value.theirState = newQSO.value.theirState.replace(/\s+/g, "");
+
+    let validQSO = true;
+    //Perform Input Validation
+    if (!useQsoUtils().validateCall(newQSO.value.theirCall)) {
+        console.log('Their call is not valid');
+        validQSO = false;
+    }
+
+    if (!useQsoUtils().validateRST(newQSO.value.receivedRST)) {
+        console.log('Received RST is not valid');
+        validQSO = false;
+    } 
+
+    if (!useQsoUtils().validateRST(newQSO.value.sentRST)) {
+        console.log('Sent RST is not valid');
+        validQSO = false;
+    }
+
+    if (!useQsoUtils().validateState(newQSO.value.theirState)) {
+        console.log('State is not valid');
+        validQSO = false;
+    }
+
+    // If the QSO is invalid, we need to break outta here.
+    if ( !validQSO ) {
+        return;
+    }
+
+    qsoList.value.push(newQSO.value);
+    newQSO.value = {
+        date: '',
+        theirCall: '',
+        sentRST: '',
+        receivedRST: '',
+        theirState: '',
+    };
+
+    if (theirCallInput.value) {
+        theirCallInput.value.focus();
+    }
 }
 
 watch(qsoList, async() => {
@@ -76,19 +124,19 @@ watch(qsoList, async() => {
   <div class="input-container">
       <div class="input-field">
         <label for="callsign">Callsign:</label>
-        <input id="callsign" v-model="newQSO.theirCall" type="text" ref="theirCallInput" @keydown.enter="addQSO">
+        <input id="callsign" v-model="newQSO.theirCall" type="text" ref="theirCallInput" :class="{ 'error': theirCallError }" @keydown.enter="addQSO">
       </div>
       <div class="input-field">
         <label for="sentRST">Sent RST:</label>
-        <input id="sentRST" v-model="newQSO.sentRST" type="text" @keydown.enter="addQSO">
+        <input id="sentRST" v-model="newQSO.sentRST" type="text" @keydown.enter="addQSO" :class="{ 'error': sentRstError }">
       </div>
       <div class="input-field">
         <label for="receivedRST">Received RST:</label>
-        <input id="receivedRST" v-model="newQSO.receivedRST" type="text" @keydown.enter="addQSO">
+        <input id="receivedRST" v-model="newQSO.receivedRST" type="text" @keydown.enter="addQSO" :class="{ 'error': receivedRstError }">
       </div>
       <div class="input-field">
         <label for="theirState">Their State:</label>
-        <input id="theirState" v-model="newQSO.theirState" type="text" @keydown.enter="addQSO">
+        <input id="theirState" v-model="newQSO.theirState" type="text" @keydown.enter="addQSO" :class="{ 'error': stateError }">
       </div>
       <button class="add-button" @click="addQSO">Add QSO</button>
     </div>
@@ -159,5 +207,9 @@ watch(qsoList, async() => {
 
 .add-button {
   margin-top: 3%;
+}
+
+.error {
+    border-color: red !important;
 }
 </style>
