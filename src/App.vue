@@ -1,7 +1,9 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import LogComponent from './components/LogComponent.vue';
+</script>
 
 <template>
-  <h1>You did it!</h1>
+  <LogComponent />
 </template>
 
 <style scoped></style>
