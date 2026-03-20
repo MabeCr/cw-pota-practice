@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
-const message = ref('Test')
+const message = ref('')
+
+function sendMessage() {
+  alert(message.value);
+  message.value = '';
+}
+
 </script>
 
 <template>
   <div class="chat-input-container">
-    <textarea v-model="message" class="chat-input" placeholder="Type your message here..."></textarea>
+    <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()"></textarea>
     <div class="send-button-container">
-      <button class="send-button">Send</button>
+      <button class="send-button" @click="sendMessage()">Send</button>
     </div>
   </div>
 </template>
@@ -25,13 +31,13 @@ const message = ref('Test')
 .chat-input {
   flex: 1;
   padding: 10px;
-  border: none;
+  border: 2px solid #333;
   border-radius: 5px;
   font-size: 16px;
   resize: none;
   height: 80vh;
   width: 80%;
-  margin-top: 20vh;
+  margin-top: 70vh;
 }
 
 .send-button-container {
