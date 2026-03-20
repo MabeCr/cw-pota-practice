@@ -1,9 +1,5 @@
 import { defineStore } from 'pinia';
-
-interface Message {
-    originator: string;
-    message: string;
-}
+import type { Message } from '../types/message';
 
 export const useChatStore = defineStore('chat', {
     state: () => ({

@@ -1,13 +1,16 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { useChatStore } from '../stores/chatStore'
+import { ConversationAiService } from '@/services/conversationAiService';
 
-const messageLog = useChatStore();
+const chatStore = useChatStore();
+const conversationAiService = new ConversationAiService();
+conversationAiService.parrotWatcher();
 
 const message = ref('');
 
 function sendMessage() {
-  messageLog.addMessage('You', message.value);
+  chatStore.addMessage('You', message.value);
   message.value = '';
 }
 
@@ -16,8 +19,9 @@ function sendMessage() {
 <template>
   <div class="conversation-input-container">
     <div class="chat-container">
-      <div v-for="(msg, index) in messageLog.messages" :key="index" class="chat-message">
-        <strong>{{ msg.originator }}:</strong> {{ msg.message }}
+      <div v-for="(msg, index) in chatStore.messages" :key="index" class="chat-message">
+        <strong v-if="msg.originator === 'You'" class="message-self">{{ msg.originator }}: {{ msg.message }}</strong>
+        <strong v-else class="message-other">{{ msg.message }} :{{ msg.originator }}</strong>
       </div>
     </div>
     <div class="input-container">
@@ -38,6 +42,40 @@ function sendMessage() {
   width: 100%;
 }
 
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: scroll;
+  padding: 10px;
+  border: 2px solid #333;
+  border-radius: 5px;
+  font-size: 16px;
+  resize: none;
+  height: 100%;
+  width: 80%;
+  margin-top: 5vh;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1vh;
+}
+
+.message-self {
+  align-self: flex-start;
+  background-color: #dcf8c6; /* Light green */
+  border: 1px solid #c5e1a5;
+}
+
+.message-other {
+  align-self: flex-end;
+  justify-self: end;
+  background-color: #3771d4; /* Light green */
+  border: 1px solid #c5e1a5;
+}
+
 .chat-input {
   flex: 1;
   padding: 10px;
@@ -47,7 +85,6 @@ function sendMessage() {
   resize: none;
   height: 80vh;
   width: 80%;
-  margin-top: 70vh;
 }
 
 .input-container {
