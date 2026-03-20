@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { useChatStore } from '../stores/chatStore'
+import { ref, useTemplateRef, nextTick, watch } from 'vue';
+import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
@@ -9,16 +9,29 @@ conversationAiService.parrotWatcher();
 
 const message = ref('');
 
+const chatContainer = useTemplateRef('chatContainer');
+
 function sendMessage() {
   chatStore.addMessage('You', message.value);
   message.value = '';
 }
 
+watch(
+  chatStore.messages,
+  async () => {
+    await nextTick();
+    const container = chatContainer.value;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  },
+  { deep: true },
+)
 </script>
 
 <template>
   <div class="conversation-input-container">
-    <div class="chat-container">
+    <div class="chat-container" ref="chatContainer">
       <div v-for="(msg, index) in chatStore.messages" :key="index" class="chat-message">
         <strong v-if="msg.originator === 'You'" class="message-self">{{ msg.originator }}: {{ msg.message }}</strong>
         <strong v-else class="message-other">{{ msg.message }} :{{ msg.originator }}</strong>
@@ -46,7 +59,7 @@ function sendMessage() {
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow-y: scroll;
+  overflow-y: auto;
   padding: 10px;
   border: 2px solid #333;
   border-radius: 5px;
