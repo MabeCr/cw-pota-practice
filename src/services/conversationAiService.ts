@@ -21,7 +21,6 @@ export class ConversationAiService {
             const message = chatStore.messages[chatStore.messages.length - 1];
             if (message !== undefined && message.originator === 'You') {
                 await setTimeout(() => {
-                    console.log(message);
                     this.sendMessage({originator: 'AI', message: message.message});
                 }, 1000);
             }
