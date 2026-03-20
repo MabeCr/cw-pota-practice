@@ -193,7 +193,7 @@ watch(
 }
 
 .table-container {
-  height: 500px;
+  height: 100%;
   overflow: auto;
   display: flex;
   flex-direction: column;
