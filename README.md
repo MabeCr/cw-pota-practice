@@ -1,7 +1,36 @@
-# practice
+# CW POTA Practice
+## Background Info - What is CW POTA Practice?
+This application will help aspiring CW POTA activators learn to navigate pileups, logging, and the various obstacles that CW operators face in the field. While it is not an exact 1-to-1 representation of completing a CW POTA activation, the goal is to help get people comfortable enough and prove to themselves they have the skills that are necessary before heading out to their local park.
 
-This template should help get you started developing with Vue 3 in Vite.
+## Roadmap
+Development of this project will happen in a few different stages:
+1. Application UI Components Developed
+2. Minimal AI Functionality Implemented
+3. CW Functionality Integrated Into Chat Page
+4. "Smarter" AI Logic Integrated
 
+## Features
+Features of the CW POTA Practice app include:
+1. Logging QSOs - Callsign, RSTs, State (with error handling)
+2. Configurable CW keying parameters
+3. Simple AI logic to facilitate QSOs
+
+## Stretch Goals
+Stretch Goals for after the features listed above are completed:
+- Pileups and AI logic to support them
+- Frequencies tied to your location's propagation conditions
+- Fading bands, QRM, and QRN
+- POTA.app spot list integration
+- AI spotting of the user, leading to more callers
+- "Gamification"
+  - Statistics for "Parks" you've activated
+  - Badges for certain amount of contacts at one park, a certain number in a single session, or for collecting different amounts of states.
+- Better UI
+
+<br>
+
+---
+# Development Information
 ## Recommended IDE Setup
 
 [VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
