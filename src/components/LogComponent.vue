@@ -186,7 +186,7 @@ watch(
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 90vh;
   width: 50vw;
   margin: 0 auto;
   margin-left: 0;
@@ -224,11 +224,11 @@ watch(
   display: flex;
   align-items: flex-start;
   margin-top: 10px;
+  width: 5vm;
 }
 
 .input-field {
   flex: 1;
-  margin-right: 10px;
 }
 
 .input-field label {
