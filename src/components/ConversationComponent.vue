@@ -1,26 +1,36 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { useChatStore } from '../stores/chatStore'
 
-const message = ref('')
+const messageLog = useChatStore();
+
+const message = ref('');
 
 function sendMessage() {
-  alert(message.value);
+  messageLog.addMessage('You', message.value);
   message.value = '';
 }
 
 </script>
 
 <template>
-  <div class="chat-input-container">
-    <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()"></textarea>
-    <div class="send-button-container">
-      <button class="send-button" @click="sendMessage()">Send</button>
+  <div class="conversation-input-container">
+    <div class="chat-container">
+      <div v-for="(msg, index) in messageLog.messages" :key="index" class="chat-message">
+        <strong>{{ msg.originator }}:</strong> {{ msg.message }}
+      </div>
+    </div>
+    <div class="input-container">
+      <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()"></textarea>
+      <div class="send-button-container">
+        <button class="send-button" @click="sendMessage()">Send</button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.chat-input-container {
+.conversation-input-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -38,6 +48,13 @@ function sendMessage() {
   height: 80vh;
   width: 80%;
   margin-top: 70vh;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%
 }
 
 .send-button-container {
