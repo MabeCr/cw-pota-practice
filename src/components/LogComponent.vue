@@ -139,6 +139,7 @@ watch(
           v-model="newQSO.theirCall"
           type="text"
           ref="theirCallInput"
+          @input="newQSO.theirCall = newQSO.theirCall.toUpperCase()"
           :class="{ error: theirCallError }"
           @keydown.enter="addQSO"
         />
@@ -169,6 +170,7 @@ watch(
           id="theirState"
           v-model="newQSO.theirState"
           type="text"
+          @input="newQSO.theirState = newQSO.theirState.toUpperCase()"
           @keydown.enter="addQSO"
           :class="{ error: stateError }"
         />
