@@ -9,7 +9,15 @@ import { US_STATES } from "@/constants/states";
 
 export class ConversationAiService {
 
+    /**
+     * The list of calling stations that are actively looking to be picked up or are within the QSO process.
+     */
     private callingStations: Station[];
+
+    /**
+     * The lost of stations that have completed the QSO process and have already been worked by the operator.
+     */
+    private workedStations: Station[];
 
     /**
      * Initializes a new instance of the ConversationAiService class.
@@ -17,6 +25,7 @@ export class ConversationAiService {
      */
     constructor() {
         this.callingStations = [];
+        this.workedStations = [];
     }
 
     /**
@@ -25,6 +34,10 @@ export class ConversationAiService {
      */
     getCallingStations(): Station[] {
         return this.callingStations;
+    }
+
+    getWorkedStation(): Station[] {
+        return this.workedStations;
     }
 
     /**
@@ -36,10 +49,11 @@ export class ConversationAiService {
     }
 
     /**
-     * Removes a calling station from the list of calling stations.
-     * @param {Station} station - The calling station to be removed.
+     * Moves a calling station that has completed a QSO to the workedStations list.
+     * @param {Station} station - The calling station to be moved.
      */
-    removeCallingStation(station: Station): void {
+    moveCallingStationToWorked(station: Station): void {
+        this.workedStations.push(station);
         this.callingStations = this.callingStations.filter(filterStation => filterStation !== station);
     }
 
@@ -105,6 +119,10 @@ export class ConversationAiService {
                         park2parkID: null,
                         qsoStep: "CQ"
                     });
+                    await setTimeout(() => {
+                        const station = this.callingStations[0] as Station;
+                        this.sendMessage({originator: station.callsign, message: station.callsign});
+                    }, (Math.random() * 500) + 1000);
                 }
             }
         
