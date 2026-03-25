@@ -4,6 +4,8 @@ import type { Message } from "@/types/message";
 import type { Store } from "pinia";
 import type { Station } from "@/types/station";
 import { QSO_STEPS, type QsoSteps } from "@/constants/qsoStates";
+import { useQsoUtils } from "@/composables/useQsoUtils";
+import { US_STATES } from "@/constants/states";
 
 export class ConversationAiService {
 
@@ -85,6 +87,25 @@ export class ConversationAiService {
                 await setTimeout(() => {
                     this.sendMessage({originator: 'AI', message: message.message});
                 }, 1000);
+            }
+        
+        }, { deep: true });
+    }
+
+    messageStoreWatcher(): void {
+        const chatStore = useChatStore();
+
+        watch(() => chatStore.messages, async () => {
+            const message = chatStore.messages[chatStore.messages.length - 1];
+            if (message !== undefined && message.originator === 'You' && message.message.includes('CQ')) {
+                if (this.callingStations.length < 1) {
+                    this.addCallingStation({
+                        callsign: useQsoUtils().generateCall(),
+                        state: US_STATES[Math.floor(Math.random() * US_STATES.length)] || { code: 'OH', name: 'Ohio' },
+                        park2parkID: null,
+                        qsoStep: "CQ"
+                    });
+                }
             }
         
         }, { deep: true });

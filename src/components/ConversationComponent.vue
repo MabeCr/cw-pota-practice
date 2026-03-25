@@ -5,7 +5,7 @@ import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
-conversationAiService.parrotWatcher();
+conversationAiService.messageStoreWatcher();
 
 const message = ref('');
 
