@@ -10,25 +10,28 @@ interface QSO {
   theirState: string
 }
 
-const tableContainer = useTemplateRef('tableContainer')
-const theirCallInput = useTemplateRef('theirCallInput')
+// Template refs for direct DOM access (scrolling and focus management)
+const tableContainer = useTemplateRef('tableContainer');
+const theirCallInput = useTemplateRef('theirCallInput');
 
+
+// Real-time validation computed properties for UI error feedback
 const theirCallError = computed(() => {
   return !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase())
-})
-
+});
 const sentRstError = computed(() => {
   return !useQsoUtils().validateRST(newQSO.value.sentRST)
-})
-
+});
 const receivedRstError = computed(() => {
   return !useQsoUtils().validateRST(newQSO.value.receivedRST)
-})
-
+});
 const stateError = computed(() => {
   return !useQsoUtils().validateState(newQSO.value.theirState)
-})
+});
 
+/**
+ * Ref to a list of QSO objects.
+ */
 const qsoList = ref<QSO[]>([])
 
 const newQSO = ref<QSO>({
@@ -39,6 +42,9 @@ const newQSO = ref<QSO>({
   theirState: '',
 })
 
+/**
+ * Processes the current form data, validates it, and adds it to the QSO list
+ */
 function addQSO() {
   newQSO.value.date =
     new Date().toLocaleTimeString('en-US', {
@@ -93,6 +99,10 @@ function addQSO() {
   }
 }
 
+/**
+ * Automatically scrolls the table to the bottom whenever the list grows,
+ * ensuring the newest entry is always visible.
+ */
 watch(
   qsoList,
   async () => {

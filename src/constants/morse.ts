@@ -1,3 +1,6 @@
+/**
+ * Mapping of alphanumeric characters to their Morse code representations.
+ */
 export const MORSE_CODE: { [key: string]: string } = {
   'A': '.-',
   'B': '-...',
@@ -37,3 +40,4 @@ export const MORSE_CODE: { [key: string]: string } = {
   '9': '----.',
   ' ': ' ',
 };
+

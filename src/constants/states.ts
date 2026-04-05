@@ -1,3 +1,6 @@
+/**
+ * A list of United States states with their two-letter codes and full names.
+ */
 export const US_STATES = [
   { "code": "AL", "name": "Alabama" },
   { "code": "AK", "name": "Alaska" },
