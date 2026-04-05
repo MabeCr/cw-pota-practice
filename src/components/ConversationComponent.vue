@@ -4,18 +4,63 @@ import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
+/**
+ * Service for managing AI-driven conversations.
+ * It also includes a parrot watcher functionality.
+ */
 const conversationAiService = new ConversationAiService();
 conversationAiService.parrotWatcher();
 
+/**
+ * The current message being typed by the user.
+ */
 const message = ref('');
 
+/**
+ * A map of originator names to their assigned background colors.
+ * Used to visually distinguish different participants in the chat.
+ */
+const colors = ref<Record<string, string>>({});
+
+/**
+ * Retrieves or generates a background color for a given originator.
+ * If the originator is 'You', it returns undefined (no special background).
+ * If a color is already assigned to the originator, it returns that color.
+ * Otherwise, it generates a random light HSAL color and stores it.
+ * 
+ * @param originator The name of the person who sent the message.
+ * @returns The HSL color string or undefined.
+ */
+function getOriginatorColor(originator: string) {
+  if (originator === 'You') return undefined;
+  if (colors.value[originator]) return colors.value[originator];
+
+  const hue = Math.floor(Math.random() * 360);
+  const color = `hsl(${hue}, 70%, 85%)`;
+  colors.value[originator] = color;
+  return color;
+}
+
+/**
+ * Template ref for the chat container element to allow for auto-scrolling.
+ */
 const chatContainer = useTemplateRef('chatContainer');
 
+/**
+ * Sends the current message to the chat store.
+ * Clears the input message after sending.
+ *
+ * @param originator The name of the person who sent the message.
+ */
 function sendMessage() {
   chatStore.addMessage('You', message.value);
   message.value = '';
 }
 
+/**
+ * Watcher to automatically scroll the chat container to the bottom
+ * whenever a new message is added to the chat store.
+ */
 watch(
   chatStore.messages,
   async () => {
@@ -34,7 +79,7 @@ watch(
     <div class="chat-container" ref="chatContainer">
       <div v-for="(msg, index) in chatStore.messages" :key="index" class="chat-message">
         <strong v-if="msg.originator === 'You'" class="message-self">{{ msg.originator }}: {{ msg.message }}</strong>
-        <strong v-else class="message-other">{{ msg.message }} :{{ msg.originator }}</strong>
+        <strong v-else class="message-other" :style="{ backgroundColor: getOriginatorColor(msg.originator) }">{{ msg.message }} :{{ msg.originator }}</strong>
       </div>
     </div>
     <div class="input-container">
@@ -117,9 +162,9 @@ watch(
   padding: 10px 20px;
   background-color: #4CAF50;
   color: white;
-  border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
 }
 </style>
+
