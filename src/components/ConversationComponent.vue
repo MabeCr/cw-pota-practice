@@ -32,9 +32,14 @@ watch(
 <template>
   <div class="conversation-input-container">
     <div class="chat-container" ref="chatContainer">
-      <div v-for="(msg, index) in chatStore.messages" :key="index" class="chat-message">
-        <strong v-if="msg.originator === 'You'" class="message-self">{{ msg.originator }}: {{ msg.message }}</strong>
-        <strong v-else class="message-other">{{ msg.message }} :{{ msg.originator }}</strong>
+      <div
+        v-for="(msg, index) in chatStore.messages"
+        :key="index"
+        class="chat-message"
+        :class="msg.originator === 'You' ? 'message-self' : 'message-other'"
+      >
+        <div class="message-name">{{ msg.originator }}</div>
+        <div class="message-text">{{ msg.message }}</div>
       </div>
     </div>
     <div class="input-container">
@@ -74,6 +79,20 @@ watch(
   display: flex;
   flex-direction: column;
   margin-bottom: 1vh;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.message-name {
+  font-weight: bold;
+  font-size: 0.85em;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.message-text {
+  font-size: 1em;
 }
 
 .message-self {
@@ -84,9 +103,13 @@ watch(
 
 .message-other {
   align-self: flex-end;
-  justify-self: end;
-  background-color: #3771d4; /* Light green */
-  border: 1px solid #c5e1a5;
+  background-color: #3771d4; /* Blue */
+  border: 1px solid #2b5a9e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .chat-input {
@@ -122,4 +145,5 @@ watch(
   cursor: pointer;
   font-size: 16px;
 }
+
 </style>
