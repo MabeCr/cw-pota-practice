@@ -1,131 +1,212 @@
 import { watch } from "vue";
 import { useChatStore } from "@/stores/chatStore";
+import { useQsoStore } from "@/stores/qsoStore";
+import { QsoScriptEngine } from "@/services/qsoScriptEngine";
 import type { Message } from "@/types/message";
-import type { Store } from "pinia";
 import type { Station } from "@/types/station";
 import { QSO_STEPS, type QsoSteps } from "@/constants/qsoStates";
 import { useQsoUtils } from "@/composables/useQsoUtils";
 import { US_STATES } from "@/constants/states";
 
 export class ConversationAiService {
+    private qsoStore = useQsoStore();
+    private qsoScriptEngine = new QsoScriptEngine();
+    private userCallsign: string = '';
 
-    /**
-     * The list of calling stations that are actively looking to be picked up or are within the QSO process.
-     */
-    private callingStations: Station[];
-
-    /**
-     * The lost of stations that have completed the QSO process and have already been worked by the operator.
-     */
-    private workedStations: Station[];
-
-    /**
-     * Initializes a new instance of the ConversationAiService class.
-     * Sets the initial list of calling stations to an empty array.
-     */
     constructor() {
-        this.callingStations = [];
-        this.workedStations = [];
+        // Auto-start the message watcher
+        this.messageStoreWatcher();
     }
 
     /**
-     * Retrieves the list of calling stations.
-     * @returns {Station[]} The list of calling stations.
+     * Sets the user's callsign for the QSO
      */
-    getCallingStations(): Station[] {
-        return this.callingStations;
-    }
-
-    getWorkedStation(): Station[] {
-        return this.workedStations;
+    setUserCallsign(callsign: string): void {
+        this.userCallsign = callsign;
     }
 
     /**
-     * Adds a calling station to the list of calling stations.
-     * @param station - The calling station to be added.
+     * Retrieves the list of active stations
+     */
+    getActiveStations(): Station[] {
+        return this.qsoStore.activeStations.map(state => state.station);
+    }
+
+    /**
+     * Adds a calling station to the QSO tracking
      */
     addCallingStation(station: Station): void {
-        this.callingStations.push(station);
+        this.qsoStore.addStation(station);
     }
 
     /**
-     * Moves a calling station that has completed a QSO to the workedStations list.
-     * @param station - The calling station to be moved.
+     * Updates the QSO step for a station
      */
-    moveCallingStationToWorked(station: Station): void {
-        this.workedStations.push(station);
-        this.callingStations = this.callingStations.filter(filterStation => filterStation !== station);
+    updateQsoStep(callsign: string, step: QsoSteps): void {
+        this.qsoStore.updateQsoStep(callsign, step);
     }
 
     /**
-     * Advances the QSO step for the given station.
-     * The QSO step will be advanced to the next step in the QSO process.
-     * If the current QSO step is 'CQ', it will be advanced to 'EXCHANGE'.
-     * If the current QSO step is 'EXCHANGE', it will be advanced to 'CONFIRM'.
-     * If the current QSO step is 'CONFIRM', it will be advanced to 'LOGGING'.
-     * If the current QSO step is 'LOGGING', it will be advanced to 'COMPLETED'.
-     * @param station - The station whose QSO step is to be advanced.
+     * Completes a QSO with a station
      */
-    advanceQsoStep(station: Station): void {
-        if (station.qsoStep === 'CQ') {
-            station.qsoStep = 'EXCHANGE';
-        } else if (station.qsoStep === 'EXCHANGE') {
-            station.qsoStep = 'CONFIRM';
-        } else if (station.qsoStep === 'CONFIRM') {
-            station.qsoStep = 'LOGGING';
-        } else if (station.qsoStep === 'LOGGING') {
-            station.qsoStep = 'COMPLETED';
-        }
+    completeQso(callsign: string): void {
+        this.qsoStore.completeQso(callsign);
     }
 
     /**
-     * Sends a message to the chat store.
-     * @param message - The message to be sent.
+     * Sends a message to the chat store
      */
     sendMessage(message: Message): void {
-        const chatStore = useChatStore()
+        const chatStore = useChatStore();
         chatStore.addMessage(message.originator, message.message);
     }
 
     /**
-     * Watches the chat store for new messages from the user and sends a
-     * copy of the message back to the chat store with the originator
-     * set to 'AI'.
+     * Watches the chat store for new messages and processes QSO logic
      */
-    parrotWatcher(): void {
-        const chatStore = useChatStore();
-
-        watch(() => chatStore.messages, async () => {
-            const message = chatStore.messages[chatStore.messages.length - 1];
-            if (message !== undefined && message.originator === 'You') {
-                await setTimeout(() => {
-                    this.sendMessage({originator: 'AI', message: message.message});
-                }, 1000);
-            }
-        
-        }, { deep: true });
-    }
-
     messageStoreWatcher(): void {
         const chatStore = useChatStore();
 
         watch(() => chatStore.messages, async () => {
-            const message = chatStore.messages[chatStore.messages.length - 1];
-            if (message !== undefined && message.originator === 'You' && message.message.includes('CQ')) {
-                if (this.callingStations.length < 1) {
-                    this.addCallingStation({
-                        callsign: useQsoUtils().generateCall(),
-                        state: US_STATES[Math.floor(Math.random() * US_STATES.length)] || { code: 'OH', name: 'Ohio' },
-                        park2parkID: null,
-                        qsoStep: "CQ"
-                    });
-                    await setTimeout(() => {
-                        const station = this.callingStations[0] as Station;
-                        this.sendMessage({originator: station.callsign, message: station.callsign});
-                    }, (Math.random() * 500) + 1000);
-                }
+            const messages = chatStore.messages;
+            if (messages.length === 0) return;
+
+            const lastMessage = messages[messages.length - 1];
+            
+            if (lastMessage == undefined) {
+                return;
             }
-        
+
+            // If user sent a message
+            if ( lastMessage.originator === 'You') {
+                await this.handleUserMessage(lastMessage);
+            }
+            // If AI sent a message, process the response
+            else if (lastMessage.originator !== 'You') {
+                await this.handleAiMessage(lastMessage);
+            }
         }, { deep: true });
+    }
+
+    /**
+     * Handles messages sent by the user
+     */
+    private async handleUserMessage(message: Message): Promise<void> {
+        const userMessage = message.message.trim();
+
+        // Check if user is sending CQ
+        if (userMessage.includes('CQ')) {
+            this.userCallsign = message.originator;
+            
+            // Spawn a hunter if none exists
+            if (this.qsoStore.activeStations.length === 0) {
+                const hunter = this.createHunter();
+                this.qsoStore.addStation(hunter);
+                
+                // Wait random time then hunter calls
+                const delay = (Math.random() * 1000) + 1500;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                this.sendMessage({
+                    originator: hunter.callsign,
+                    message: hunter.callsign
+                });
+            }
+        }
+        else {
+            // User is responding to a hunter
+            await this.processHunterResponse(userMessage);
+        }
+    }
+
+    /**
+     * Handles messages sent by AI (hunters)
+     */
+    private async processHunterResponse(userMessage: string): Promise<void> {
+        // Find the most recent active hunter
+        const activeStations = this.qsoStore.activeStations;
+        if (activeStations.length === 0) return;
+
+        const lastStation = activeStations[activeStations.length - 1];
+
+        let lastStationCallsign: string;
+        if (lastStation != undefined) {
+            lastStationCallsign = lastStation.station.callsign;
+        } else {
+            lastStationCallsign = "error";
+        }
+        // Get the last station that spoke
+        const stationState = this.qsoStore.getStationState(lastStationCallsign);
+        
+        if (!stationState) return;
+
+        // Update message history
+        this.qsoStore.addMessageToHistory(lastStationCallsign, userMessage, 'You');
+
+        // Determine next step in QSO
+        const nextStep = this.qsoScriptEngine.getNextStep(
+            stationState.currentStep,
+            userMessage
+        );
+
+        // Update station to next step
+        this.updateQsoStep(lastStationCallsign, nextStep);
+
+        // Generate and send response if QSO not complete
+        if (nextStep !== 'COMPLETED') {
+            const context = this.createScriptContext(stationState.station);
+            const responseMessage = this.qsoScriptEngine.generateMessage(nextStep, context);
+            
+            if (responseMessage) {
+                const delay = (Math.random() * 800) + 500;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                this.sendMessage({
+                    originator: lastStationCallsign,
+                    message: responseMessage
+                });
+            }
+        } else {
+            // QSO complete
+            this.completeQso(lastStationCallsign);
+            
+            // Clean up completed QSOs
+            this.qsoStore.cleanupCompleted();
+        }
+    }
+
+    /**
+     * Handles AI messages (for future functionality)
+     */
+    private async handleAiMessage(message: Message): Promise<void> {
+        // This can be used for AI parrot functionality or other features
+    }
+
+    /**
+     * Creates a random hunter station
+     */
+    private createHunter(): Station {
+        const stateIndex = Math.floor(Math.random() * US_STATES.length);
+        const state = US_STATES[stateIndex] || { code: 'OH', name: 'Ohio' };
+        
+        return {
+            callsign: useQsoUtils().generateCall(),
+            state: state,
+            park2parkID: null,
+            qsoStep: 'CQ'
+        };
+    }
+
+    /**
+     * Creates the context for QSO script template
+     */
+    private createScriptContext(station: Station) {
+        return {
+            activatorCallsign: this.userCallsign || 'K1ABC',
+            hunterCallsign: station.callsign,
+            activatorState: station.state,
+            hunterState: station.state.code,
+            rst: this.qsoScriptEngine.generateRst(),
+            timeOfDay: this.qsoScriptEngine.getTimeOfDay()
+        };
     }
 }

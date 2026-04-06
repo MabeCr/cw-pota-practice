@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import { ref, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
+import { useQsoStore } from '../stores/qsoStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
+const qsoStore = useQsoStore();
 const conversationAiService = new ConversationAiService();
+conversationAiService.setUserCallsign('K1ABC'); // Default activator callsign
 conversationAiService.messageStoreWatcher();
 
 const message = ref('');
@@ -12,8 +15,10 @@ const message = ref('');
 const chatContainer = useTemplateRef('chatContainer');
 
 function sendMessage() {
-  chatStore.addMessage('You', message.value);
-  message.value = '';
+  if (message.value.trim()) {
+    chatStore.addMessage('You', message.value.trim());
+    message.value = '';
+  }
 }
 
 watch(
@@ -31,6 +36,11 @@ watch(
 
 <template>
   <div class="conversation-input-container">
+    <!-- QSO Status Header -->
+    <div class="qso-status-header">
+      <span class="active-hunters">Active Hunters: {{ qsoStore.activeStations.length }}</span>
+    </div>
+
     <div class="chat-container" ref="chatContainer">
       <div
         v-for="(msg, index) in chatStore.messages"
@@ -144,6 +154,27 @@ watch(
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
+}
+
+.send-button:hover {
+  background-color: #45a049;
+}
+
+.qso-status-header {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 80%;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.active-hunters {
+  font-weight: bold;
+  color: #333;
 }
 
 </style>
