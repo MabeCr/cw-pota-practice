@@ -42,7 +42,7 @@ export class ConversationAiService {
 
     /**
      * Adds a calling station to the list of calling stations.
-     * @param {Station} station - The calling station to be added.
+     * @param station - The calling station to be added.
      */
     addCallingStation(station: Station): void {
         this.callingStations.push(station);
@@ -50,7 +50,7 @@ export class ConversationAiService {
 
     /**
      * Moves a calling station that has completed a QSO to the workedStations list.
-     * @param {Station} station - The calling station to be moved.
+     * @param station - The calling station to be moved.
      */
     moveCallingStationToWorked(station: Station): void {
         this.workedStations.push(station);
@@ -64,7 +64,7 @@ export class ConversationAiService {
      * If the current QSO step is 'EXCHANGE', it will be advanced to 'CONFIRM'.
      * If the current QSO step is 'CONFIRM', it will be advanced to 'LOGGING'.
      * If the current QSO step is 'LOGGING', it will be advanced to 'COMPLETED'.
-     * @param {Station} station - The station whose QSO step is to be advanced.
+     * @param station - The station whose QSO step is to be advanced.
      */
     advanceQsoStep(station: Station): void {
         if (station.qsoStep === 'CQ') {
@@ -80,7 +80,7 @@ export class ConversationAiService {
 
     /**
      * Sends a message to the chat store.
-     * @param {Message} message - The message to be sent.
+     * @param message - The message to be sent.
      */
     sendMessage(message: Message): void {
         const chatStore = useChatStore()
