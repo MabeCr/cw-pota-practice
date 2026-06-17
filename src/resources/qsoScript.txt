@@ -1,6 +1,6 @@
 {Activator Callsign}: CQ CQ POTA DE {Activator Callsign} K
 {Hunter Callsign}: {Hunter Callsign}
-{Activator Callsign}: {Hunter Callsign} TU {GM if morning, GA if afternoon, GE if evening} UR {RST values} {Activator's state} {Activator's state} BK
-{Hunter Callsign}: BK TU UR {RST values} {Hunter's state} {Hunter's state} BK
+{Activator Callsign}: {Hunter Callsign} TU {GM if morning, GA if afternoon, GE if evening} UR {RST values} {RST values} {Activator's state} {Activator's state} BK
+{Hunter Callsign}: BK TU UR {RST values} {RST values} {Hunter's state} {Hunter's state} BK
 {Activator Callsign}: TU {Hunter's state} {Hunter's state} 73 {e e, which is just dit dit}
 {Hunter's Callsign}: {e e, which is just dit dit}
