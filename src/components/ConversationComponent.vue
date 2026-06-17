@@ -1,16 +1,15 @@
 <script lang="ts" setup>
 import { ref, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
-import { useQsoStore } from '../stores/qsoStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
-const qsoStore = useQsoStore();
 const conversationAiService = new ConversationAiService();
-conversationAiService.setUserCallsign('K1ABC'); // Default activator callsign
-conversationAiService.messageStoreWatcher();
+conversationAiService.setUserCallsign('K1ABC');
 
 const message = ref('');
+
+const activeHuntersCount = ref(0);
 
 const chatContainer = useTemplateRef('chatContainer');
 
@@ -20,6 +19,14 @@ function sendMessage() {
     message.value = '';
   }
 }
+
+watch(
+  () => conversationAiService.getActiveStations(),
+  () => {
+    activeHuntersCount.value = conversationAiService.getActiveStations().length;
+  },
+  { deep: true }
+);
 
 watch(
   chatStore.messages,
@@ -38,7 +45,7 @@ watch(
   <div class="conversation-input-container">
     <!-- QSO Status Header -->
     <div class="qso-status-header">
-      <span class="active-hunters">Active Hunters: {{ qsoStore.activeStations.length }}</span>
+      <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
     </div>
 
     <div class="chat-container" ref="chatContainer">

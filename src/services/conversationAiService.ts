@@ -1,212 +1,217 @@
-import { watch } from "vue";
+import { ref, watch } from "vue";
 import { useChatStore } from "@/stores/chatStore";
-import { useQsoStore } from "@/stores/qsoStore";
-import { QsoScriptEngine } from "@/services/qsoScriptEngine";
 import type { Message } from "@/types/message";
 import type { Station } from "@/types/station";
-import { QSO_STEPS, type QsoSteps } from "@/constants/qsoStates";
 import { useQsoUtils } from "@/composables/useQsoUtils";
 import { US_STATES } from "@/constants/states";
 
+const HUNTER_COUNT = 3;
+
 export class ConversationAiService {
-    private qsoStore = useQsoStore();
-    private qsoScriptEngine = new QsoScriptEngine();
     private userCallsign: string = '';
+    private activeStationList = ref<Station[]>([]);
+    private inQsoWithCallsign: string | null = null;
 
     constructor() {
-        // Auto-start the message watcher
-        this.messageStoreWatcher();
+        this.setupWatcher();
     }
 
-    /**
-     * Sets the user's callsign for the QSO
-     */
     setUserCallsign(callsign: string): void {
         this.userCallsign = callsign;
     }
 
-    /**
-     * Retrieves the list of active stations
-     */
     getActiveStations(): Station[] {
-        return this.qsoStore.activeStations.map(state => state.station);
+        return this.activeStationList.value;
     }
 
-    /**
-     * Adds a calling station to the QSO tracking
-     */
-    addCallingStation(station: Station): void {
-        this.qsoStore.addStation(station);
-    }
-
-    /**
-     * Updates the QSO step for a station
-     */
-    updateQsoStep(callsign: string, step: QsoSteps): void {
-        this.qsoStore.updateQsoStep(callsign, step);
-    }
-
-    /**
-     * Completes a QSO with a station
-     */
-    completeQso(callsign: string): void {
-        this.qsoStore.completeQso(callsign);
-    }
-
-    /**
-     * Sends a message to the chat store
-     */
     sendMessage(message: Message): void {
         const chatStore = useChatStore();
         chatStore.addMessage(message.originator, message.message);
     }
 
-    /**
-     * Watches the chat store for new messages and processes QSO logic
-     */
-    messageStoreWatcher(): void {
+    private setupWatcher(): void {
         const chatStore = useChatStore();
-
         watch(() => chatStore.messages, async () => {
             const messages = chatStore.messages;
             if (messages.length === 0) return;
 
             const lastMessage = messages[messages.length - 1];
-            
-            if (lastMessage == undefined) {
-                return;
-            }
+            if (!lastMessage || lastMessage.originator !== 'You') return;
 
-            // If user sent a message
-            if ( lastMessage.originator === 'You') {
-                await this.handleUserMessage(lastMessage);
-            }
-            // If AI sent a message, process the response
-            else if (lastMessage.originator !== 'You') {
-                await this.handleAiMessage(lastMessage);
-            }
+            await this.handleUserMessage(lastMessage);
         }, { deep: true });
     }
 
-    /**
-     * Handles messages sent by the user
-     */
     private async handleUserMessage(message: Message): Promise<void> {
-        const userMessage = message.message.trim();
+        const userMessage = message.message.trim().toUpperCase();
 
-        // Check if user is sending CQ
-        if (userMessage.includes('CQ')) {
-            this.userCallsign = message.originator;
-            
-            // Spawn a hunter if none exists
-            if (this.qsoStore.activeStations.length === 0) {
-                const hunter = this.createHunter();
-                this.qsoStore.addStation(hunter);
-                
-                // Wait random time then hunter calls
-                const delay = (Math.random() * 1000) + 1500;
-                await new Promise(resolve => setTimeout(resolve, delay));
-                
+        if (userMessage.includes('CQ') && userMessage.includes('POTA')) {
+            await this.handleCQ();
+            return;
+        }
+
+        // Fire each hunter's response independently so their random delays don't stack
+        for (const hunter of [...this.activeStationList.value]) {
+            if (this.inQsoWithCallsign !== null && this.inQsoWithCallsign !== hunter.callsign) {
+                continue; // Another QSO in progress — stay silent
+            }
+            void this.processHunterResponse(userMessage, hunter);
+        }
+    }
+
+    private async handleCQ(): Promise<void> {
+        // Always reset on a new CQ so hunters from a previous round don't linger
+        this.activeStationList.value = [];
+        this.inQsoWithCallsign = null;
+
+        const hunters = Array.from({ length: HUNTER_COUNT }, () => this.createHunter());
+        hunters.forEach(h => this.activeStationList.value.push(h));
+
+        // Each hunter calls in with its own independent random delay
+        hunters.forEach(hunter => void this.hunterCallIn(hunter));
+    }
+
+    private async hunterCallIn(hunter: Station): Promise<void> {
+        await this.randomDelay();
+
+        // If a QSO started while we were waiting, stay silent
+        if (this.inQsoWithCallsign !== null) return;
+
+        hunter.qsoStep = 'HUNTER_CALL';
+        this.sendMessage({
+            originator: hunter.callsign,
+            message: hunter.callsign.toUpperCase()
+        });
+    }
+
+    private async processHunterResponse(userMessage: string, hunter: Station): Promise<void> {
+        const hunterCall = hunter.callsign.toUpperCase();
+
+        if (hunter.qsoStep === 'HUNTER_CALL') {
+            if (this.isFullCallInMessage(userMessage, hunterCall)) {
+                this.inQsoWithCallsign = hunter.callsign; // Lock — others go silent
+                hunter.qsoStep = 'ACTIVATOR_RST';
+                await this.randomDelay();
+
+                const rst = this.generateRST();
+                const stateCode = hunter.state.code.toUpperCase();
                 this.sendMessage({
                     originator: hunter.callsign,
-                    message: hunter.callsign
+                    message: `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`
                 });
+                hunter.qsoStep = 'HUNTER_RST';
+
+            } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
+                await this.randomDelay();
+                this.sendMessage({ originator: hunter.callsign, message: `RR ${hunter.callsign}` });
+
+            } else if (
+                this.isExchangeLike(userMessage) &&
+                (this.isPartialCallInMessage(userMessage, hunterCall) || this.isCallsignError(userMessage, hunterCall))
+            ) {
+                await this.randomDelay();
+                this.sendMessage({ originator: hunter.callsign, message: `NN ${hunterCall}` });
+
+            } else if (this.isPartialCallInMessage(userMessage, hunterCall)) {
+                await this.randomDelay();
+                this.sendMessage({ originator: hunter.callsign, message: hunterCall });
+
+            } else if (this.isCallsignError(userMessage, hunterCall)) {
+                await this.randomDelay();
+                this.sendMessage({ originator: hunter.callsign, message: `NN ${hunterCall}` });
             }
-        }
-        else {
-            // User is responding to a hunter
-            await this.processHunterResponse(userMessage);
+
+        } else if (hunter.qsoStep === 'HUNTER_RST' && userMessage.includes('73')) {
+            hunter.qsoStep = 'ACTIVATOR_FINISH';
+            await this.randomDelay();
+
+            this.sendMessage({ originator: hunter.callsign, message: 'EE' });
+            hunter.qsoStep = 'HUNTER_FINISH';
+
+            const remaining = this.activeStationList.value.filter(s => s.callsign !== hunter.callsign);
+            this.activeStationList.value = remaining;
+            this.inQsoWithCallsign = null;
+
+            // Remaining hunters re-call to signal they are still available
+            for (const remainingHunter of remaining) {
+                remainingHunter.qsoStep = 'CQ';
+                void this.hunterCallIn(remainingHunter);
+            }
         }
     }
 
-    /**
-     * Handles messages sent by AI (hunters)
-     */
-    private async processHunterResponse(userMessage: string): Promise<void> {
-        // Find the most recent active hunter
-        const activeStations = this.qsoStore.activeStations;
-        if (activeStations.length === 0) return;
+    private isFullCallInMessage(message: string, callsign: string): boolean {
+        return message.split(/\s+/).includes(callsign);
+    }
 
-        const lastStation = activeStations[activeStations.length - 1];
+    private isCallConfirmationQuery(message: string, callsign: string): boolean {
+        return message.split(/\s+/).some(word => word === `${callsign}?`);
+    }
 
-        let lastStationCallsign: string;
-        if (lastStation != undefined) {
-            lastStationCallsign = lastStation.station.callsign;
-        } else {
-            lastStationCallsign = "error";
-        }
-        // Get the last station that spoke
-        const stationState = this.qsoStore.getStationState(lastStationCallsign);
-        
-        if (!stationState) return;
+    private isExchangeLike(message: string): boolean {
+        return message.trimEnd().endsWith('BK');
+    }
 
-        // Update message history
-        this.qsoStore.addMessageToHistory(lastStationCallsign, userMessage, 'You');
+    private isPartialCallInMessage(message: string, callsign: string): boolean {
+        return message.split(/\s+/).some(word => {
+            if (word === callsign) return false;
 
-        // Determine next step in QSO
-        const nextStep = this.qsoScriptEngine.getNextStep(
-            stationState.currentStep,
-            userMessage
+            const knownPart = word.replace(/\?+$/, '');
+            if (knownPart.length === 0) return false;
+
+            if (knownPart.includes('?')) return this.wildcardMatch(knownPart, callsign);
+
+            return callsign.includes(knownPart);
+        });
+    }
+
+    private isCallsignError(message: string, callsign: string): boolean {
+        return message.split(/\s+/).some(word =>
+            word !== callsign && this.levenshtein(word, callsign) === 1
         );
+    }
 
-        // Update station to next step
-        this.updateQsoStep(lastStationCallsign, nextStep);
-
-        // Generate and send response if QSO not complete
-        if (nextStep !== 'COMPLETED') {
-            const context = this.createScriptContext(stationState.station);
-            const responseMessage = this.qsoScriptEngine.generateMessage(nextStep, context);
-            
-            if (responseMessage) {
-                const delay = (Math.random() * 800) + 500;
-                await new Promise(resolve => setTimeout(resolve, delay));
-                this.sendMessage({
-                    originator: lastStationCallsign,
-                    message: responseMessage
-                });
+    private levenshtein(a: string, b: string): number {
+        let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+        for (let i = 1; i <= a.length; i++) {
+            const curr = [i];
+            for (let j = 1; j <= b.length; j++) {
+                curr[j] = a[i - 1] === b[j - 1]
+                    ? prev[j - 1]!
+                    : 1 + Math.min(prev[j]!, curr[j - 1]!, prev[j - 1]!);
             }
-        } else {
-            // QSO complete
-            this.completeQso(lastStationCallsign);
-            
-            // Clean up completed QSOs
-            this.qsoStore.cleanupCompleted();
+            prev = curr;
         }
+        return prev[b.length]!;
     }
 
-    /**
-     * Handles AI messages (for future functionality)
-     */
-    private async handleAiMessage(message: Message): Promise<void> {
-        // This can be used for AI parrot functionality or other features
+    private wildcardMatch(pattern: string, str: string): boolean {
+        if (pattern.length !== str.length) return false;
+        const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+        const regexStr = escaped.replace(/\?/g, '.');
+        return new RegExp(`^${regexStr}$`, 'i').test(str);
     }
 
-    /**
-     * Creates a random hunter station
-     */
+    private generateRST(): string {
+        const sOptions = [5, 7, 8, 9, 9, 9];
+        const tOptions = [7, 7, 9, 9];
+        const s = sOptions[Math.floor(Math.random() * sOptions.length)]!;
+        const t = tOptions[Math.floor(Math.random() * tOptions.length)]!;
+        return `5${s}${t}`;
+    }
+
+    private async randomDelay(): Promise<void> {
+        const ms = Math.random() * 1000 + 1000;
+        await new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     private createHunter(): Station {
-        const stateIndex = Math.floor(Math.random() * US_STATES.length);
-        const state = US_STATES[stateIndex] || { code: 'OH', name: 'Ohio' };
-        
+        const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
         return {
             callsign: useQsoUtils().generateCall(),
-            state: state,
+            state,
             park2parkID: null,
             qsoStep: 'CQ'
-        };
-    }
-
-    /**
-     * Creates the context for QSO script template
-     */
-    private createScriptContext(station: Station) {
-        return {
-            activatorCallsign: this.userCallsign || 'K1ABC',
-            hunterCallsign: station.callsign,
-            activatorState: station.state,
-            hunterState: station.state.code,
-            rst: this.qsoScriptEngine.generateRst(),
-            timeOfDay: this.qsoScriptEngine.getTimeOfDay()
         };
     }
 }
