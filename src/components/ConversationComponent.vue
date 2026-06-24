@@ -3,6 +3,7 @@ import { ref, reactive, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 import { useMorse } from '@/composables/useMorse';
+import KeyerComponent from '@/components/KeyerComponent.vue';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
@@ -134,6 +135,8 @@ watch(
         class="volume-slider"
       />
     </div>
+
+    <KeyerComponent />
   </div>
 </template>
 

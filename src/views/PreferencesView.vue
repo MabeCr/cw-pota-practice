@@ -1,9 +1,30 @@
 <script setup lang="ts">
+import { ref, onUnmounted } from 'vue';
 import { useMorse } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
+import type { KeyerType } from '@/stores/settingsStore';
 
 const { volume, isMuted, setVolume, toggleMute } = useMorse();
 const settings = useSettingsStore();
+
+const bindingCapture = ref<'dit' | 'dah' | null>(null);
+
+function captureKey(event: KeyboardEvent) {
+    event.preventDefault();
+    if (event.key === 'Escape') { bindingCapture.value = null; return; }
+    if (bindingCapture.value === 'dit') settings.setDitKey(event.key);
+    else if (bindingCapture.value === 'dah') settings.setDahKey(event.key);
+    bindingCapture.value = null;
+}
+
+function startCapture(target: 'dit' | 'dah') {
+    bindingCapture.value = target;
+    document.addEventListener('keydown', captureKey, { once: true });
+}
+
+onUnmounted(() => {
+    document.removeEventListener('keydown', captureKey);
+});
 </script>
 
 <template>
@@ -27,6 +48,10 @@ const settings = useSettingsStore();
           autocomplete="off"
         />
       </div>
+    </section>
+
+    <section class="pref-section">
+      <h2>Keyer</h2>
 
       <div class="pref-row">
         <label class="pref-label" for="wpm">Keyer WPM</label>
@@ -77,6 +102,42 @@ const settings = useSettingsStore();
           />
           <span class="range-value">{{ settings.rampTime }} ms</span>
         </div>
+      </div>
+
+      <div class="pref-row">
+        <label class="pref-label" for="keyerType">Type</label>
+        <select
+          id="keyerType"
+          class="pref-select"
+          :value="settings.keyerType"
+          @change="settings.setKeyerType(($event.target as HTMLSelectElement).value as KeyerType)"
+        >
+          <option value="straight">Straight Key</option>
+          <option value="iambic-a">Iambic A</option>
+          <option value="iambic-b">Iambic B</option>
+        </select>
+      </div>
+
+      <div class="pref-row">
+        <label class="pref-label">Dit Key</label>
+        <button
+          class="key-bind-btn"
+          :class="{ capturing: bindingCapture === 'dit' }"
+          @click="startCapture('dit')"
+        >
+          {{ bindingCapture === 'dit' ? 'Press any key…' : settings.ditKey }}
+        </button>
+      </div>
+
+      <div class="pref-row">
+        <label class="pref-label">Dah Key</label>
+        <button
+          class="key-bind-btn"
+          :class="{ capturing: bindingCapture === 'dah' }"
+          @click="startCapture('dah')"
+        >
+          {{ bindingCapture === 'dah' ? 'Press any key…' : settings.dahKey }}
+        </button>
       </div>
     </section>
 
@@ -190,5 +251,48 @@ h1 {
   padding: 0;
   line-height: 1;
   flex-shrink: 0;
+}
+
+.pref-select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+.pref-select:focus {
+  outline: none;
+  border-color: #3771d4;
+  box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.2);
+}
+
+.key-bind-btn {
+  padding: 6px 16px;
+  min-width: 80px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f8f8f8;
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  text-align: center;
+}
+
+.key-bind-btn:hover {
+  border-color: #3771d4;
+  background: #f0f4ff;
+}
+
+.key-bind-btn.capturing {
+  border-color: #3771d4;
+  background: #e8f0ff;
+  color: #3771d4;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 </style>

@@ -23,7 +23,7 @@ function applyVolume(): void {
     }
 }
 
-function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
+export function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
     if (!audioContext || audioContext.state === 'closed') {
         audioContext = new AudioContext();
 
