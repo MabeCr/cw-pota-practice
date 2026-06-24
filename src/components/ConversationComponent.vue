@@ -6,7 +6,7 @@ import { useMorse } from '@/composables/useMorse';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
-const { playMorse } = useMorse();
+const { playMorse, volume, isMuted, setVolume, toggleMute } = useMorse();
 
 // Cache each hunter's audio config on first message so "EE" (sent after
 // the station is removed from the active list) still uses the right settings.
@@ -118,6 +118,21 @@ watch(
       <div class="send-button-container">
         <button class="send-button" @click="sendMessage()">Send</button>
       </div>
+    </div>
+
+    <div class="volume-control">
+      <button class="mute-button" @click="toggleMute" :title="isMuted ? 'Unmute' : 'Mute'">
+        {{ isMuted ? '🔇' : '🔊' }}
+      </button>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        :value="volume"
+        @input="setVolume(parseFloat(($event.target as HTMLInputElement).value))"
+        class="volume-slider"
+      />
     </div>
   </div>
 </template>
@@ -232,4 +247,27 @@ watch(
   color: #333;
 }
 
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 80%;
+  max-width: 80%;
+  margin-top: 12px;
+}
+
+.mute-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 0;
+  line-height: 1;
+}
+
+.volume-slider {
+  flex: 1;
+  cursor: pointer;
+  accent-color: #3771d4;
+}
 </style>

@@ -1,23 +1,41 @@
+import { ref } from 'vue'
 import { MORSE_CODE } from '@/constants/morse'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const WPM = 15;
 const FREQUENCY = 600; // Hz — 600 is a typical CW sidetone pitch
-const RAMP_TIME = 0.008; // 8ms rise/fall to eliminate keying clicks
 
-// Singleton audio graph — shared across all callers so concurrent hunters each get
-// their own oscillator/gain chain without hitting browser context limits.
-// All per-message gain nodes feed through a single compressor before the destination
-// to prevent clipping when multiple stations transmit simultaneously.
+// Module-level singletons so volume state and the audio graph are shared
+// across every caller of useMorse().
 let audioContext: AudioContext | null = null;
 let compressor: DynamicsCompressorNode | null = null;
+let masterGain: GainNode | null = null;
+
+const volume = ref(0.8);   // 0–1
+const isMuted = ref(false);
+
+function applyVolume(): void {
+    if (masterGain && audioContext) {
+        masterGain.gain.setValueAtTime(
+            isMuted.value ? 0 : volume.value,
+            audioContext.currentTime
+        );
+    }
+}
 
 function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
     if (!audioContext || audioContext.state === 'closed') {
         audioContext = new AudioContext();
+
         compressor = audioContext.createDynamicsCompressor();
-        compressor.attack.setValueAtTime(0.001, audioContext.currentTime); // fast enough to catch CW key-on
+        compressor.attack.setValueAtTime(0.001, audioContext.currentTime);
         compressor.release.setValueAtTime(0.1, audioContext.currentTime);
-        compressor.connect(audioContext.destination);
+
+        masterGain = audioContext.createGain();
+        masterGain.gain.setValueAtTime(isMuted.value ? 0 : volume.value, audioContext.currentTime);
+
+        compressor.connect(masterGain);
+        masterGain.connect(audioContext.destination);
     }
     return { ctx: audioContext, target: compressor! };
 }
@@ -32,10 +50,9 @@ export function useMorse() {
 
     const playMorse = (text: string, wpm: number = WPM, frequency: number = FREQUENCY): void => {
         const { ctx, target } = getAudioGraph();
-        const dit = 1200 / wpm / 1000; // dit duration in seconds
+        const RAMP_TIME = useSettingsStore().rampTime / 1000;
+        const dit = 1200 / wpm / 1000;
 
-        // Each call gets its own oscillator+gain pair so concurrent messages
-        // play independently without overwriting each other's scheduled events.
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -71,11 +88,11 @@ export function useMorse() {
                     t += elementDuration;
 
                     if (!isLastElement) {
-                        t += dit;       // intra-character: 1 unit
+                        t += dit;
                     } else if (!isLastChar) {
-                        t += dit * 3;   // inter-character: 3 units
+                        t += dit * 3;
                     } else if (!isLastWord) {
-                        t += dit * 7;   // inter-word: 7 units
+                        t += dit * 7;
                     }
                 });
             });
@@ -84,5 +101,16 @@ export function useMorse() {
         oscillator.stop(t + 0.1);
     };
 
-    return { textToMorse, playMorse };
+    const setVolume = (value: number): void => {
+        volume.value = value;
+        if (isMuted.value && value > 0) isMuted.value = false;
+        applyVolume();
+    };
+
+    const toggleMute = (): void => {
+        isMuted.value = !isMuted.value;
+        applyVolume();
+    };
+
+    return { textToMorse, playMorse, volume, isMuted, setVolume, toggleMute };
 }
