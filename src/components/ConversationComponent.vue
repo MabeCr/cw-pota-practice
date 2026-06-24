@@ -107,11 +107,9 @@ watch(
 
 <template>
   <div class="conversation-input-container">
-    <!-- QSO Status Header -->
-    <div class="qso-status-header">
-      <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
+    <div class="chat-header">
+      <h2 class="chat-title">Activation Chat</h2>
     </div>
-
     <div class="chat-container" ref="chatContainer">
       <div
         v-for="(msg, index) in chatStore.messages"
@@ -123,6 +121,9 @@ watch(
         <div class="message-name">{{ msg.originator }}</div>
         <div class="message-text">{{ msg.originator !== 'You' ? displayedText[index] : msg.message }}</div>
       </div>
+    </div>
+    <div class="qso-status-header">
+      <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
     </div>
     <div class="input-container">
       <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()"></textarea>
@@ -157,6 +158,23 @@ watch(
   align-items: center;
   height: 80vh;
   width: 100%;
+  padding-top: 20px;
+  box-sizing: border-box;
+}
+
+.chat-header {
+  width: 80%;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.chat-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .chat-container {
@@ -165,13 +183,12 @@ watch(
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-  border: 2px solid #333;
-  border-radius: 5px;
+  border: 1px solid #c0c0c0;
+  border-radius: 6px;
   font-size: 16px;
   resize: none;
   height: 100%;
   width: 80%;
-  margin-top: 5vh;
 }
 
 .chat-message {
@@ -208,8 +225,8 @@ watch(
 .chat-input {
   flex: 1;
   padding: 10px;
-  border: 2px solid #333;
-  border-radius: 5px;
+  border: 1px solid #c0c0c0;
+  border-radius: 6px;
   font-size: 16px;
   resize: none;
   height: 80vh;
