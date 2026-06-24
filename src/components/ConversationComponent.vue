@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, useTemplateRef, nextTick, watch } from 'vue';
+import { ref, reactive, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
@@ -7,8 +7,49 @@ const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
 
 const message = ref('');
-
 const activeHuntersCount = ref(0);
+
+const HUNTER_COLORS = ['#3771d4', '#0891b2', '#6d28d9', '#047857'];
+const colorMap = new Map<string, string>();
+
+function getHunterColor(originator: string): string {
+  if (!colorMap.has(originator)) {
+    colorMap.set(originator, HUNTER_COLORS[colorMap.size % HUNTER_COLORS.length]!);
+  }
+  return colorMap.get(originator)!;
+}
+
+// Revealed text for each hunter message, keyed by message index
+const displayedText = reactive<Record<number, string>>({});
+
+function animateMessage(index: number, fullText: string): void {
+  displayedText[index] = '';
+  let charIndex = 0;
+
+  function typeNext() {
+    if (charIndex >= fullText.length) return;
+    charIndex++;
+    displayedText[index] = fullText.slice(0, charIndex);
+    setTimeout(typeNext, 80 + Math.random() * 60);
+  }
+
+  typeNext();
+}
+
+let lastAnimatedIndex = -1;
+
+watch(
+  () => chatStore.messages.length,
+  (newLength) => {
+    for (let i = lastAnimatedIndex + 1; i < newLength; i++) {
+      const msg = chatStore.messages[i];
+      if (msg && msg.originator !== 'You') {
+        animateMessage(i, msg.message);
+      }
+    }
+    lastAnimatedIndex = newLength - 1;
+  }
+);
 
 const chatContainer = useTemplateRef('chatContainer');
 
@@ -53,9 +94,10 @@ watch(
         :key="index"
         class="chat-message"
         :class="msg.originator === 'You' ? 'message-self' : 'message-other'"
+        :style="msg.originator !== 'You' ? { backgroundColor: getHunterColor(msg.originator) } : {}"
       >
         <div class="message-name">{{ msg.originator }}</div>
-        <div class="message-text">{{ msg.message }}</div>
+        <div class="message-text">{{ msg.originator !== 'You' ? displayedText[index] : msg.message }}</div>
       </div>
     </div>
     <div class="input-container">
@@ -119,13 +161,7 @@ watch(
 
 .message-other {
   align-self: flex-end;
-  background-color: #3771d4; /* Blue */
-  border: 1px solid #2b5a9e;
   color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
 }
 
 .chat-input {

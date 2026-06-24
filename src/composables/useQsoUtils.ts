@@ -48,7 +48,7 @@ export function useQsoUtils() {
             callString += alphabet[Math.floor(Math.random() * alphabet.length)] as string;
             callString += alphabet[Math.floor(Math.random() * alphabet.length)] as string;
         }
-        return callString;
+        return callString.toLocaleUpperCase();
     };
 
     const validateCall = (callString: string) => {
