@@ -5,16 +5,27 @@ import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
-conversationAiService.parrotWatcher();
 
 const message = ref('');
+
+const activeHuntersCount = ref(0);
 
 const chatContainer = useTemplateRef('chatContainer');
 
 function sendMessage() {
-  chatStore.addMessage('You', message.value);
-  message.value = '';
+  if (message.value.trim()) {
+    chatStore.addMessage('You', message.value.trim());
+    message.value = '';
+  }
 }
+
+watch(
+  () => conversationAiService.getActiveStations(),
+  () => {
+    activeHuntersCount.value = conversationAiService.getActiveStations().length;
+  },
+  { deep: true }
+);
 
 watch(
   chatStore.messages,
@@ -31,10 +42,20 @@ watch(
 
 <template>
   <div class="conversation-input-container">
+    <!-- QSO Status Header -->
+    <div class="qso-status-header">
+      <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
+    </div>
+
     <div class="chat-container" ref="chatContainer">
-      <div v-for="(msg, index) in chatStore.messages" :key="index" class="chat-message">
-        <strong v-if="msg.originator === 'You'" class="message-self">{{ msg.originator }}: {{ msg.message }}</strong>
-        <strong v-else class="message-other">{{ msg.message }} :{{ msg.originator }}</strong>
+      <div
+        v-for="(msg, index) in chatStore.messages"
+        :key="index"
+        class="chat-message"
+        :class="msg.originator === 'You' ? 'message-self' : 'message-other'"
+      >
+        <div class="message-name">{{ msg.originator }}</div>
+        <div class="message-text">{{ msg.message }}</div>
       </div>
     </div>
     <div class="input-container">
@@ -74,6 +95,20 @@ watch(
   display: flex;
   flex-direction: column;
   margin-bottom: 1vh;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.message-name {
+  font-weight: bold;
+  font-size: 0.85em;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.message-text {
+  font-size: 1em;
 }
 
 .message-self {
@@ -84,9 +119,13 @@ watch(
 
 .message-other {
   align-self: flex-end;
-  justify-self: end;
-  background-color: #3771d4; /* Light green */
-  border: 1px solid #c5e1a5;
+  background-color: #3771d4; /* Blue */
+  border: 1px solid #2b5a9e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .chat-input {
@@ -122,4 +161,26 @@ watch(
   cursor: pointer;
   font-size: 16px;
 }
+
+.send-button:hover {
+  background-color: #45a049;
+}
+
+.qso-status-header {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 80%;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.active-hunters {
+  font-weight: bold;
+  color: #333;
+}
+
 </style>
