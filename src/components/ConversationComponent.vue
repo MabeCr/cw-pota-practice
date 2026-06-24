@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, useTemplateRef, nextTick, watch } from 'vue';
+import { ref, reactive, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
 
@@ -18,6 +18,38 @@ function getHunterColor(originator: string): string {
   }
   return colorMap.get(originator)!;
 }
+
+// Revealed text for each hunter message, keyed by message index
+const displayedText = reactive<Record<number, string>>({});
+
+function animateMessage(index: number, fullText: string): void {
+  displayedText[index] = '';
+  let charIndex = 0;
+
+  function typeNext() {
+    if (charIndex >= fullText.length) return;
+    charIndex++;
+    displayedText[index] = fullText.slice(0, charIndex);
+    setTimeout(typeNext, 80 + Math.random() * 60);
+  }
+
+  typeNext();
+}
+
+let lastAnimatedIndex = -1;
+
+watch(
+  () => chatStore.messages.length,
+  (newLength) => {
+    for (let i = lastAnimatedIndex + 1; i < newLength; i++) {
+      const msg = chatStore.messages[i];
+      if (msg && msg.originator !== 'You') {
+        animateMessage(i, msg.message);
+      }
+    }
+    lastAnimatedIndex = newLength - 1;
+  }
+);
 
 const chatContainer = useTemplateRef('chatContainer');
 
@@ -65,7 +97,7 @@ watch(
         :style="msg.originator !== 'You' ? { backgroundColor: getHunterColor(msg.originator) } : {}"
       >
         <div class="message-name">{{ msg.originator }}</div>
-        <div class="message-text">{{ msg.message }}</div>
+        <div class="message-text">{{ msg.originator !== 'You' ? displayedText[index] : msg.message }}</div>
       </div>
     </div>
     <div class="input-container">

@@ -5,7 +5,7 @@ import type { Station } from "@/types/station";
 import { useQsoUtils } from "@/composables/useQsoUtils";
 import { US_STATES } from "@/constants/states";
 
-const HUNTER_COUNT = 3;
+const HUNTER_COUNT = 6;
 
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
