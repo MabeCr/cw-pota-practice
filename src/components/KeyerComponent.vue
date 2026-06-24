@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useKeyer } from '@/composables/useKeyer';
 
+const emit = defineEmits<{
+    character:    [char: string];
+    'delete-word': [];
+    send:         [];
+}>();
+
 const settings = useSettingsStore();
-const { onDitDown, onDitUp, onDahDown, onDahUp, cleanup, isDitPressed, isDahPressed } = useKeyer();
+const {
+    onDitDown, onDitUp, onDahDown, onDahUp, cleanup,
+    isDitPressed, isDahPressed,
+    decodedCharCount, lastDecodedChar, errorSignal,
+} = useKeyer();
+
+watch(decodedCharCount, () => { emit('character', lastDecodedChar.value); });
+watch(errorSignal,      () => { emit('delete-word'); });
 
 const isFocused = ref(false);
 
@@ -36,6 +49,9 @@ function onKeyDown(event: KeyboardEvent) {
     } else if (event.key === settings.dahKey) {
         event.preventDefault();
         onDahDown();
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        emit('send');
     }
 }
 

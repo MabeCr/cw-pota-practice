@@ -1,50 +1,129 @@
 import { ref } from 'vue';
 import { getAudioGraph } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { MORSE_CODE } from '@/constants/morse';
 
 type ElementType = 'dit' | 'dah';
 
-// Visual state — reactive so components can bind to them
-const isDitPressed = ref(false);
-const isDahPressed = ref(false);
+// ─── reverse morse table ──────────────────────────────────────────────────────
+// Filters out the space entry (word gaps are handled by inter-word timer).
+const REVERSE_MORSE: Record<string, string> = Object.fromEntries(
+    Object.entries(MORSE_CODE)
+        .filter(([letter, code]) => letter !== ' ' && code.trim().length > 0)
+        .map(([letter, code]) => [code, letter])
+);
 
-// Internal timing state — plain vars for performance
-let ditHeld = false;
-let dahHeld = false;
+// ─── reactive state (exported for UI binding) ─────────────────────────────────
+const isDitPressed    = ref(false);
+const isDahPressed    = ref(false);
+const decodedCharCount = ref(0);   // increments every time a char/space is decoded
+const lastDecodedChar  = ref('');  // the most recently decoded character or ' '
+const errorSignal      = ref(0);   // increments when the error procedure fires
+
+// ─── keyer timing state ───────────────────────────────────────────────────────
+let ditHeld       = false;
+let dahHeld       = false;
 let iambicRunning = false;
 let lastElement: ElementType = 'dit';
-let squeezeMemory = false;     // iambic B: was opposite paddle held during current element?
-let elementTimer: ReturnType<typeof setTimeout> | null = null;
+let squeezeMemory = false;
 
-// Straight key oscillator (persists while key is held)
-let straightOsc: OscillatorNode | null = null;
-let straightGain: GainNode | null = null;
+// ─── straight key state ───────────────────────────────────────────────────────
+let straightOsc:        OscillatorNode | null = null;
+let straightGain:       GainNode | null       = null;
+let straightKeyDownTime = 0;
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// ─── decoder state ────────────────────────────────────────────────────────────
+let currentSymbol      = '';
+let consecutiveDitCount = 0;
+let errorFired         = false;   // prevents multiple error triggers per error run
+let hadCharSinceReset  = false;   // guards against spurious word spaces
+let charTimer: ReturnType<typeof setTimeout> | null = null;
+let wordTimer: ReturnType<typeof setTimeout> | null = null;
 
-function getDitS(): number {
-    return 1200 / useSettingsStore().wpm / 1000;
+// ─── timing helpers ───────────────────────────────────────────────────────────
+function getDitMs(): number {
+    return 1200 / useSettingsStore().wpm;
 }
 
 function getRampS(): number {
-    const settings = useSettingsStore();
-    return settings.rampTime / 1000;
+    return useSettingsStore().rampTime / 1000;
 }
 
-// ─── iambic ──────────────────────────────────────────────────────────────────
+// ─── decoder logic ────────────────────────────────────────────────────────────
+
+function cancelBoundaryTimers(): void {
+    if (charTimer) { clearTimeout(charTimer); charTimer = null; }
+    if (wordTimer) { clearTimeout(wordTimer); wordTimer = null; }
+}
+
+function decodeCurrentSymbol(): void {
+    charTimer = null;
+    if (currentSymbol) {
+        lastDecodedChar.value = REVERSE_MORSE[currentSymbol] ?? '?';
+        decodedCharCount.value++;
+        hadCharSinceReset = true;
+    }
+    currentSymbol       = '';
+    consecutiveDitCount = 0;
+    errorFired          = false;
+}
+
+function insertWordSpace(): void {
+    wordTimer = null;
+    if (hadCharSinceReset) {
+        lastDecodedChar.value = ' ';
+        decodedCharCount.value++;
+        hadCharSinceReset = false;
+    }
+    currentSymbol       = '';
+    consecutiveDitCount = 0;
+    errorFired          = false;
+}
+
+// elapsedDits: how many dits of silence have already passed before this call.
+// Iambic: 1 (the inter-element space), straight key: 0 (silence starts at key-up).
+function startCharBoundaryTimers(elapsedDits: number): void {
+    cancelBoundaryTimers();
+    const ditMs = getDitMs();
+    charTimer = setTimeout(decodeCurrentSymbol, Math.max(0, (3 - elapsedDits) * ditMs));
+    wordTimer = setTimeout(insertWordSpace,      Math.max(0, (7 - elapsedDits) * ditMs));
+}
+
+// Called at the start of every element (dit or dah).
+function onElementDecoded(type: '.' | '-'): void {
+    if (type === '.') {
+        consecutiveDitCount++;
+        // 8+ consecutive dits (HH) = error procedure — clears the last word
+        if (!errorFired && consecutiveDitCount >= 8) {
+            currentSymbol = '';
+            errorFired    = true;
+            errorSignal.value++;
+            return;
+        }
+        if (!errorFired) currentSymbol += '.';
+    } else {
+        consecutiveDitCount = 0;
+        errorFired          = false;
+        currentSymbol      += '-';
+    }
+}
+
+// ─── iambic audio ─────────────────────────────────────────────────────────────
 
 function playElement(type: ElementType): void {
     const settings = useSettingsStore();
     const { ctx, target } = getAudioGraph();
 
-    const ditS = getDitS();
+    const ditS      = getDitMs() / 1000;
     const durationS = type === 'dit' ? ditS : ditS * 3;
-    const rampS = Math.min(getRampS(), durationS / 2);
+    const rampS     = Math.min(getRampS(), durationS / 2);
 
-    lastElement = type;
     squeezeMemory = false;
+    lastElement   = type;
+    cancelBoundaryTimers();
+    onElementDecoded(type === 'dit' ? '.' : '-');
 
-    const osc = ctx.createOscillator();
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(settings.frequency, ctx.currentTime);
@@ -59,8 +138,7 @@ function playElement(type: ElementType): void {
     osc.start(t);
     osc.stop(t + durationS + 0.05);
 
-    // Schedule next element check after element + inter-element space
-    elementTimer = setTimeout(scheduleNext, (durationS + ditS) * 1000);
+    setTimeout(scheduleNext, (durationS + ditS) * 1000);
 }
 
 function scheduleNext(): void {
@@ -81,10 +159,12 @@ function scheduleNext(): void {
         playElement(next);
     } else {
         iambicRunning = false;
+        // 1 dit of inter-element silence has already elapsed
+        startCharBoundaryTimers(1);
     }
 }
 
-// ─── straight key ─────────────────────────────────────────────────────────────
+// ─── straight key audio ───────────────────────────────────────────────────────
 
 function startStraightKey(): void {
     if (straightOsc) return;
@@ -92,7 +172,10 @@ function startStraightKey(): void {
     const { ctx, target } = getAudioGraph();
     const rampS = getRampS();
 
-    const osc = ctx.createOscillator();
+    cancelBoundaryTimers();
+    straightKeyDownTime = performance.now();
+
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(settings.frequency, ctx.currentTime);
@@ -102,7 +185,7 @@ function startStraightKey(): void {
     gain.gain.linearRampToValueAtTime(1, ctx.currentTime + rampS);
     osc.start();
 
-    straightOsc = osc;
+    straightOsc  = osc;
     straightGain = gain;
 }
 
@@ -110,13 +193,22 @@ function stopStraightKey(force = false): void {
     if (!straightOsc || !straightGain) return;
     if (!force && (ditHeld || dahHeld)) return;
 
+    // Classify the element by duration only on a natural key-up (not forced blur).
+    if (!force && straightKeyDownTime > 0) {
+        const durationMs = performance.now() - straightKeyDownTime;
+        // Dit: < 2× reference, Dah: ≥ 2× reference
+        onElementDecoded(durationMs < getDitMs() * 2 ? '.' : '-');
+        startCharBoundaryTimers(0);
+    }
+    straightKeyDownTime = 0;
+
     const { ctx } = getAudioGraph();
     const rampS = getRampS();
     straightGain.gain.cancelScheduledValues(ctx.currentTime);
     straightGain.gain.setValueAtTime(straightGain.gain.value, ctx.currentTime);
     straightGain.gain.linearRampToValueAtTime(0, ctx.currentTime + rampS);
     straightOsc.stop(ctx.currentTime + rampS + 0.01);
-    straightOsc = null;
+    straightOsc  = null;
     straightGain = null;
 }
 
@@ -169,18 +261,24 @@ export function useKeyer() {
         if (useSettingsStore().keyerType === 'straight') stopStraightKey();
     }
 
-    // Called on blur: clears held state so iambic stops after current element,
-    // and immediately silences the straight key.
+    // Blur handler: clears held state (iambic stops after current element finishes
+    // naturally), immediately stops straight key, and cancels pending decodes.
     function cleanup(): void {
-        ditHeld = false;
-        dahHeld = false;
+        ditHeld       = false;
+        dahHeld       = false;
         squeezeMemory = false;
         isDitPressed.value = false;
         isDahPressed.value = false;
+        cancelBoundaryTimers();
+        currentSymbol       = '';
+        consecutiveDitCount = 0;
+        errorFired          = false;
         stopStraightKey(true);
-        // elementTimer is intentionally left running so the current iambic
-        // element finishes; scheduleNext() will see no keys held and stop.
     }
 
-    return { onDitDown, onDitUp, onDahDown, onDahUp, cleanup, isDitPressed, isDahPressed };
+    return {
+        onDitDown, onDitUp, onDahDown, onDahUp, cleanup,
+        isDitPressed, isDahPressed,
+        decodedCharCount, lastDecodedChar, errorSignal,
+    };
 }

@@ -16,6 +16,16 @@ const stationAudioCache = new Map<string, { frequency: number; wpm: number }>();
 const message = ref('');
 const activeHuntersCount = ref(0);
 
+function onKeyerCharacter(char: string): void {
+    message.value += char;
+}
+
+function onKeyerDeleteWord(): void {
+    const trimmed = message.value.trimEnd();
+    const lastSpace = trimmed.lastIndexOf(' ');
+    message.value = lastSpace >= 0 ? trimmed.substring(0, lastSpace + 1) : '';
+}
+
 function getHunterColor(originator: string): string {
   let hash = 0;
   for (let i = 0; i < originator.length; i++) {
@@ -136,7 +146,7 @@ watch(
       />
     </div>
 
-    <KeyerComponent />
+    <KeyerComponent @character="onKeyerCharacter" @delete-word="onKeyerDeleteWord" @send="sendMessage" />
   </div>
 </template>
 
