@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 
+export type KeyerType = 'straight' | 'iambic-a' | 'iambic-b';
+
 const STORAGE_KEY = 'cw-pota-settings';
 
 function loadFromStorage() {
@@ -18,10 +20,13 @@ function saveToStorage(state: ReturnType<typeof defaultState>) {
 function defaultState() {
     const saved = loadFromStorage();
     return {
-        callsign:  (saved.callsign  as string)  ?? '',
-        frequency: (saved.frequency as number)  ?? 600,
-        wpm:       (saved.wpm       as number)  ?? 20,
-        rampTime:  (saved.rampTime  as number)  ?? 8,   // ms
+        callsign:   (saved.callsign   as string)    ?? '',
+        frequency:  (saved.frequency  as number)    ?? 600,
+        wpm:        (saved.wpm        as number)    ?? 20,
+        rampTime:   (saved.rampTime   as number)    ?? 8,        // ms
+        ditKey:     (saved.ditKey     as string)    ?? '[',
+        dahKey:     (saved.dahKey     as string)    ?? ']',
+        keyerType:  (saved.keyerType  as KeyerType) ?? 'iambic-a' as KeyerType,
     };
 }
 
@@ -42,6 +47,18 @@ export const useSettingsStore = defineStore('settings', {
         },
         setRampTime(value: number) {
             this.rampTime = value;
+            saveToStorage(this.$state);
+        },
+        setDitKey(value: string) {
+            this.ditKey = value;
+            saveToStorage(this.$state);
+        },
+        setDahKey(value: string) {
+            this.dahKey = value;
+            saveToStorage(this.$state);
+        },
+        setKeyerType(value: KeyerType) {
+            this.keyerType = value;
             saveToStorage(this.$state);
         },
     },

@@ -10,6 +10,7 @@ const HUNTER_COUNT = 3;
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
     private inQsoWithCallsign: string | null = null;
+    private hunterLastMessage = new Map<string, string>();
 
     constructor() {
         this.setupWatcher();
@@ -22,6 +23,11 @@ export class ConversationAiService {
     sendMessage(message: Message): void {
         const chatStore = useChatStore();
         chatStore.addMessage(message.originator, message.message);
+    }
+
+    private sendHunterMessage(hunter: Station, msg: string): void {
+        this.hunterLastMessage.set(hunter.callsign, msg);
+        this.sendMessage({ originator: hunter.callsign, message: msg });
     }
 
     private setupWatcher(): void {
@@ -42,6 +48,19 @@ export class ConversationAiService {
 
         if (userMessage.includes('CQ') && userMessage.includes('POTA')) {
             await this.handleCQ();
+            return;
+        }
+
+        if (userMessage === '?' && this.inQsoWithCallsign === null) {
+            for (const hunter of [...this.activeStationList.value]) {
+                void this.repeatLastMessage(hunter);
+            }
+            return;
+        }
+
+        if (userMessage === '?' && this.inQsoWithCallsign) {
+            const hunter = this.activeStationList.value.find(s => s.callsign === this.inQsoWithCallsign);
+            if (hunter) void this.repeatLastMessage(hunter, true);
             return;
         }
 
@@ -77,10 +96,16 @@ export class ConversationAiService {
         if (this.inQsoWithCallsign !== null) return;
 
         hunter.qsoStep = 'HUNTER_CALL';
-        this.sendMessage({
-            originator: hunter.callsign,
-            message: hunter.callsign.toUpperCase()
-        });
+        this.sendHunterMessage(hunter, hunter.callsign.toUpperCase());
+    }
+
+    private async repeatLastMessage(hunter: Station, bypassQsoGuard = false): Promise<void> {
+        const last = this.hunterLastMessage.get(hunter.callsign);
+        if (!last) return;
+        await this.randomDelay();
+        if (!bypassQsoGuard && this.inQsoWithCallsign !== null) return;
+        if (bypassQsoGuard && this.inQsoWithCallsign !== hunter.callsign) return;
+        this.sendMessage({ originator: hunter.callsign, message: last });
     }
 
     private async processHunterResponse(userMessage: string, hunter: Station): Promise<void> {
@@ -94,15 +119,12 @@ export class ConversationAiService {
 
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
-                this.sendMessage({
-                    originator: hunter.callsign,
-                    message: `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`
-                });
+                this.sendHunterMessage(hunter, `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`);
                 hunter.qsoStep = 'HUNTER_RST';
 
             } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendMessage({ originator: hunter.callsign, message: `RR ${hunter.callsign}` });
+                this.sendHunterMessage(hunter, `RR ${hunter.callsign}`);
 
             } else if (
                 this.isExchangeLike(userMessage) &&
@@ -113,26 +135,27 @@ export class ConversationAiService {
                 await this.randomDelay();
                 // Re-check after the delay in case another hunter claimed the QSO while we waited
                 if (this.inQsoWithCallsign !== null && this.inQsoWithCallsign !== hunter.callsign) return;
-                this.sendMessage({ originator: hunter.callsign, message: `NN ${hunterCall}` });
+                this.sendHunterMessage(hunter, `NN ${hunterCall}`);
 
             } else if (this.isPartialCallInMessage(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendMessage({ originator: hunter.callsign, message: hunterCall });
+                this.sendHunterMessage(hunter, hunterCall);
 
             } else if (this.isCallsignError(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendMessage({ originator: hunter.callsign, message: `NN ${hunterCall}` });
+                this.sendHunterMessage(hunter, `NN ${hunterCall}`);
             }
 
         } else if (hunter.qsoStep === 'HUNTER_RST' && userMessage.includes('73')) {
             hunter.qsoStep = 'ACTIVATOR_FINISH';
             await this.randomDelay();
 
-            this.sendMessage({ originator: hunter.callsign, message: 'EE' });
+            this.sendHunterMessage(hunter, 'EE');
             hunter.qsoStep = 'HUNTER_FINISH';
 
             const remaining = this.activeStationList.value.filter(s => s.callsign !== hunter.callsign);
             this.activeStationList.value = remaining;
+            this.hunterLastMessage.delete(hunter.callsign);
             this.inQsoWithCallsign = null;
 
             // Remaining hunters re-call to signal they are still available
