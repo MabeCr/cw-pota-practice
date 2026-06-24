@@ -7,8 +7,17 @@ const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
 
 const message = ref('');
-
 const activeHuntersCount = ref(0);
+
+const HUNTER_COLORS = ['#3771d4', '#0891b2', '#6d28d9', '#047857'];
+const colorMap = new Map<string, string>();
+
+function getHunterColor(originator: string): string {
+  if (!colorMap.has(originator)) {
+    colorMap.set(originator, HUNTER_COLORS[colorMap.size % HUNTER_COLORS.length]!);
+  }
+  return colorMap.get(originator)!;
+}
 
 const chatContainer = useTemplateRef('chatContainer');
 
@@ -53,6 +62,7 @@ watch(
         :key="index"
         class="chat-message"
         :class="msg.originator === 'You' ? 'message-self' : 'message-other'"
+        :style="msg.originator !== 'You' ? { backgroundColor: getHunterColor(msg.originator) } : {}"
       >
         <div class="message-name">{{ msg.originator }}</div>
         <div class="message-text">{{ msg.message }}</div>
@@ -119,13 +129,7 @@ watch(
 
 .message-other {
   align-self: flex-end;
-  background-color: #3771d4; /* Blue */
-  border: 1px solid #2b5a9e;
   color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
 }
 
 .chat-input {
