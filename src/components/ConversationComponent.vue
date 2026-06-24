@@ -5,7 +5,6 @@ import { ConversationAiService } from '@/services/conversationAiService';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
-conversationAiService.setUserCallsign('K1ABC');
 
 const message = ref('');
 

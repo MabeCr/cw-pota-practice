@@ -8,16 +8,11 @@ import { US_STATES } from "@/constants/states";
 const HUNTER_COUNT = 3;
 
 export class ConversationAiService {
-    private userCallsign: string = '';
     private activeStationList = ref<Station[]>([]);
     private inQsoWithCallsign: string | null = null;
 
     constructor() {
         this.setupWatcher();
-    }
-
-    setUserCallsign(callsign: string): void {
-        this.userCallsign = callsign;
     }
 
     getActiveStations(): Station[] {
@@ -60,15 +55,19 @@ export class ConversationAiService {
     }
 
     private async handleCQ(): Promise<void> {
-        // Always reset on a new CQ so hunters from a previous round don't linger
-        this.activeStationList.value = [];
         this.inQsoWithCallsign = null;
 
-        const hunters = Array.from({ length: HUNTER_COUNT }, () => this.createHunter());
-        hunters.forEach(h => this.activeStationList.value.push(h));
+        // Top up to HUNTER_COUNT — existing hunters persist until they complete a QSO
+        const needed = HUNTER_COUNT - this.activeStationList.value.length;
+        for (let i = 0; i < needed; i++) {
+            this.activeStationList.value.push(this.createHunter());
+        }
 
-        // Each hunter calls in with its own independent random delay
-        hunters.forEach(hunter => void this.hunterCallIn(hunter));
+        // All hunters (existing + new) re-call with independent random delays
+        for (const hunter of this.activeStationList.value) {
+            hunter.qsoStep = 'CQ';
+            void this.hunterCallIn(hunter);
+        }
     }
 
     private async hunterCallIn(hunter: Station): Promise<void> {
@@ -109,7 +108,11 @@ export class ConversationAiService {
                 this.isExchangeLike(userMessage) &&
                 (this.isPartialCallInMessage(userMessage, hunterCall) || this.isCallsignError(userMessage, hunterCall))
             ) {
+                // If the activator addressed a different valid hunter, stay silent
+                if (this.isAddressingAnotherHunter(userMessage, hunterCall)) return;
                 await this.randomDelay();
+                // Re-check after the delay in case another hunter claimed the QSO while we waited
+                if (this.inQsoWithCallsign !== null && this.inQsoWithCallsign !== hunter.callsign) return;
                 this.sendMessage({ originator: hunter.callsign, message: `NN ${hunterCall}` });
 
             } else if (this.isPartialCallInMessage(userMessage, hunterCall)) {
@@ -165,6 +168,13 @@ export class ConversationAiService {
         });
     }
 
+    private isAddressingAnotherHunter(message: string, thisCallsign: string): boolean {
+        return this.activeStationList.value.some(station => {
+            const call = station.callsign.toUpperCase();
+            return call !== thisCallsign && this.isFullCallInMessage(message, call);
+        });
+    }
+
     private isCallsignError(message: string, callsign: string): boolean {
         return message.split(/\s+/).some(word =>
             word !== callsign && this.levenshtein(word, callsign) === 1
@@ -205,8 +215,16 @@ export class ConversationAiService {
         await new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    private createHunter(): Station {
+    private createHunter(callsign?: string): Station {
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
+        if (callsign) {
+            return {
+            callsign: `${callsign}`,
+            state,
+            park2parkID: null,
+            qsoStep: 'CQ'
+        };
+        }
         return {
             callsign: useQsoUtils().generateCall(),
             state,
