@@ -10,244 +10,338 @@ interface QSO {
   theirState: string
 }
 
-const tableContainer = useTemplateRef('tableContainer')
-const theirCallInput = useTemplateRef('theirCallInput')
+const tableContainer   = useTemplateRef<HTMLDivElement>('tableContainer')
+const theirCallInput   = useTemplateRef<HTMLInputElement>('theirCallInput')
+const sentRSTInput     = useTemplateRef<HTMLInputElement>('sentRSTInput')
+const receivedRSTInput = useTemplateRef<HTMLInputElement>('receivedRSTInput')
+const theirStateInput  = useTemplateRef<HTMLInputElement>('theirStateInput')
 
-const theirCallError = computed(() => {
-  return !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase())
-})
+const qsoList    = ref<QSO[]>([])
+const isActivated = computed(() => qsoList.value.length >= 10)
 
-const sentRstError = computed(() => {
-  return !useQsoUtils().validateRST(newQSO.value.sentRST)
-})
+const newQSO = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
 
-const receivedRstError = computed(() => {
-  return !useQsoUtils().validateRST(newQSO.value.receivedRST)
-})
-
-const stateError = computed(() => {
-  return !useQsoUtils().validateState(newQSO.value.theirState)
-})
-
-const qsoList = ref<QSO[]>([])
-
-const newQSO = ref<QSO>({
-  date: '',
-  theirCall: '',
-  sentRST: '',
-  receivedRST: '',
-  theirState: '',
-})
+// Only flag errors once the user has typed something in a field
+const theirCallError   = computed(() => newQSO.value.theirCall.length   > 0 && !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase()))
+const sentRstError     = computed(() => newQSO.value.sentRST.length     > 0 && !useQsoUtils().validateRST(newQSO.value.sentRST))
+const receivedRstError = computed(() => newQSO.value.receivedRST.length > 0 && !useQsoUtils().validateRST(newQSO.value.receivedRST))
+const stateError       = computed(() => newQSO.value.theirState.length  > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
 
 function addQSO() {
-  newQSO.value.date =
-    new Date().toLocaleTimeString('en-US', {
-      timeZone: 'UTC',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-    }) + 'z'
-  newQSO.value.theirCall = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.sentRST = newQSO.value.sentRST.replace(/\s+/g, '')
-  newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
-  newQSO.value.theirState = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.theirCall    = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.sentRST      = newQSO.value.sentRST.replace(/\s+/g, '')
+  newQSO.value.receivedRST  = newQSO.value.receivedRST.replace(/\s+/g, '')
+  newQSO.value.theirState   = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.date         = new Date().toLocaleTimeString('en-US', {
+    timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit',
+  }) + 'z'
 
-  let validQSO = true
-  //Perform Input Validation
-  if (!useQsoUtils().validateCall(newQSO.value.theirCall)) {
-    console.log('Their call is not valid')
-    validQSO = false
-  }
+  if (!useQsoUtils().validateCall(newQSO.value.theirCall))    return
+  if (!useQsoUtils().validateRST(newQSO.value.sentRST))       return
+  if (!useQsoUtils().validateRST(newQSO.value.receivedRST))   return
+  if (!useQsoUtils().validateState(newQSO.value.theirState))  return
 
-  if (!useQsoUtils().validateRST(newQSO.value.receivedRST)) {
-    console.log('Received RST is not valid')
-    validQSO = false
-  }
+  qsoList.value.push({ ...newQSO.value })
+  newQSO.value = { date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' }
+  theirCallInput.value?.focus()
+}
 
-  if (!useQsoUtils().validateRST(newQSO.value.sentRST)) {
-    console.log('Sent RST is not valid')
-    validQSO = false
-  }
-
-  if (!useQsoUtils().validateState(newQSO.value.theirState)) {
-    console.log('State is not valid')
-    validQSO = false
-  }
-
-  // If the QSO is invalid, we need to break outta here.
-  if (!validQSO) {
-    return
-  }
-
-  qsoList.value.push(newQSO.value)
-  newQSO.value = {
-    date: '',
-    theirCall: '',
-    sentRST: '',
-    receivedRST: '',
-    theirState: '',
-  }
-
-  if (theirCallInput.value) {
-    theirCallInput.value.focus()
+// For RST fields: Enter on an empty field fills "599" and advances focus.
+// Enter on a filled field submits the QSO.
+function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', next: HTMLInputElement | null) {
+  if (event.key !== 'Enter') return
+  if (!newQSO.value[field]) {
+    event.preventDefault()
+    newQSO.value[field] = '599'
+    next?.focus()
+  } else {
+    addQSO()
   }
 }
 
-watch(
-  qsoList,
-  async () => {
-    await nextTick()
-    const container = tableContainer.value
-    if (container) {
-      container.scrollTop = container.scrollHeight
-    }
-  },
-  { deep: true },
-)
+watch(qsoList, async () => {
+  await nextTick()
+  if (tableContainer.value) tableContainer.value.scrollTop = tableContainer.value.scrollHeight
+}, { deep: true })
 </script>
 
 <template>
   <div class="log-container">
-    <h1>QSO List</h1>
-    <div class="table-container" ref="tableContainer">
+
+    <div class="log-header">
+      <h2 class="log-title">QSO Log</h2>
+      <div class="activation-badge" :class="{ activated: isActivated }">
+        <span v-if="!isActivated">{{ qsoList.length }}&thinsp;/&thinsp;10</span>
+        <span v-else>✓ Activated</span>
+      </div>
+    </div>
+
+    <div class="table-wrapper" ref="tableContainer">
       <table class="qso-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Their Call</th>
-            <th>Sent RST</th>
-            <th>Received RST</th>
-            <th>Their State</th>
+            <th>Time</th>
+            <th>Callsign</th>
+            <th>Sent</th>
+            <th>Rcvd</th>
+            <th>State</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(qso, index) in qsoList" :key="index">
-            <td>{{ qso.date }}</td>
-            <td>{{ qso.theirCall }}</td>
-            <td>{{ qso.sentRST }}</td>
-            <td>{{ qso.receivedRST }}</td>
-            <td>{{ qso.theirState }}</td>
+            <td class="mono">{{ qso.date }}</td>
+            <td class="mono">{{ qso.theirCall }}</td>
+            <td class="mono">{{ qso.sentRST }}</td>
+            <td class="mono">{{ qso.receivedRST }}</td>
+            <td class="mono">{{ qso.theirState }}</td>
+          </tr>
+          <tr v-if="qsoList.length === 0" class="empty-row">
+            <td colspan="5">No contacts logged yet.</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="input-container">
+
+    <div class="input-row">
       <div class="input-field">
-        <label for="callsign">Callsign:</label>
+        <label for="callsign">Callsign</label>
         <input
           id="callsign"
+          ref="theirCallInput"
           v-model="newQSO.theirCall"
           type="text"
-          ref="theirCallInput"
+          autocomplete="off" spellcheck="false" autocorrect="off"
           @input="newQSO.theirCall = newQSO.theirCall.toUpperCase()"
           :class="{ error: theirCallError }"
           @keydown.enter="addQSO"
         />
       </div>
-      <div class="input-field">
-        <label for="sentRST">Sent RST:</label>
+
+      <div class="input-field input-field--narrow">
+        <label for="sentRST">Sent RST</label>
         <input
           id="sentRST"
+          ref="sentRSTInput"
           v-model="newQSO.sentRST"
           type="text"
-          @keydown.enter="addQSO"
+          autocomplete="off" spellcheck="false"
           :class="{ error: sentRstError }"
+          @keydown="onRstKeydown($event, 'sentRST', receivedRSTInput)"
         />
       </div>
-      <div class="input-field">
-        <label for="receivedRST">Received RST:</label>
+
+      <div class="input-field input-field--narrow">
+        <label for="receivedRST">Rcvd RST</label>
         <input
           id="receivedRST"
+          ref="receivedRSTInput"
           v-model="newQSO.receivedRST"
           type="text"
-          @keydown.enter="addQSO"
+          autocomplete="off" spellcheck="false"
           :class="{ error: receivedRstError }"
+          @keydown="onRstKeydown($event, 'receivedRST', theirStateInput)"
         />
       </div>
-      <div class="input-field">
-        <label for="theirState">Their State:</label>
+
+      <div class="input-field input-field--narrow">
+        <label for="theirState">State</label>
         <input
           id="theirState"
+          ref="theirStateInput"
           v-model="newQSO.theirState"
           type="text"
+          autocomplete="off" spellcheck="false"
           @input="newQSO.theirState = newQSO.theirState.toUpperCase()"
-          @keydown.enter="addQSO"
           :class="{ error: stateError }"
+          @keydown.enter="addQSO"
         />
       </div>
-      <button class="add-button" @click="addQSO">Add QSO</button>
+
+      <div class="input-field input-field--btn">
+        <label>&nbsp;</label>
+        <button class="add-button" @click="addQSO">Log</button>
+      </div>
     </div>
+
   </div>
 </template>
 
-<style>
+<style scoped>
 .log-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 90vh;
-  width: 50vw;
-  margin: 0 auto;
-  margin-left: 0;
+  height: 100%;
+  padding: 20px 24px 16px;
+  box-sizing: border-box;
+  background: #fff;
 }
 
-.table-container {
-  height: 100%;
-  overflow: auto;
+/* ── header ── */
+.log-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.log-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.activation-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #f0f0f0;
+  color: #555;
+  letter-spacing: 0.03em;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.activation-badge.activated {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* ── table ── */
+.table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #c0c0c0;
+  border-radius: 6px;
+  margin-bottom: 14px;
 }
 
 .qso-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
+  font-size: 0.88rem;
 }
 
-.qso-table th,
-.qso-table td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+.qso-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .qso-table th {
-  background-color: #f0f0f0;
+  background: #f7f7f8;
+  color: #666;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #c0c0c0;
 }
 
-.qso-table tr:hover {
-  background-color: #f5f5f5;
+.qso-table td {
+  padding: 7px 12px;
+  color: #222;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.input-container {
+.qso-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.qso-table tbody tr:nth-child(even) td {
+  background: #f0f0f3;
+}
+
+.qso-table tbody tr:hover td {
+  background: #e8e8ed;
+}
+
+.mono {
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+
+.empty-row td {
+  text-align: center;
+  color: #aaa;
+  font-style: italic;
+  padding: 24px 0;
+}
+
+/* ── input row ── */
+.input-row {
   display: flex;
-  align-items: flex-start;
-  margin-top: 10px;
-  width: 5vm;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 2;
+}
+
+.input-field--narrow {
   flex: 1;
 }
 
+.input-field--btn {
+  flex: 0 0 auto;
+}
+
 .input-field label {
-  display: block;
-  margin-bottom: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
 }
 
 .input-field input {
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 50%;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #d4d4d4;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-family: monospace;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #fafafa;
+}
+
+.input-field input:focus {
+  outline: none;
+  border-color: #3771d4;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+}
+
+.input-field input.error {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.15);
 }
 
 .add-button {
-  margin-top: 3%;
+  padding: 7px 18px;
+  background: #3771d4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
 }
 
-.error {
-  border-color: red !important;
+.add-button:hover {
+  background: #2b5aab;
 }
 </style>
