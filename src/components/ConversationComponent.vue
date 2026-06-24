@@ -2,21 +2,26 @@
 import { ref, reactive, useTemplateRef, nextTick, watch } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
+import { useMorse } from '@/composables/useMorse';
 
 const chatStore = useChatStore();
 const conversationAiService = new ConversationAiService();
+const { playMorse } = useMorse();
+
+// Cache each hunter's audio config on first message so "EE" (sent after
+// the station is removed from the active list) still uses the right settings.
+const stationAudioCache = new Map<string, { frequency: number; wpm: number }>();
 
 const message = ref('');
 const activeHuntersCount = ref(0);
 
-const HUNTER_COLORS = ['#3771d4', '#0891b2', '#6d28d9', '#047857'];
-const colorMap = new Map<string, string>();
-
 function getHunterColor(originator: string): string {
-  if (!colorMap.has(originator)) {
-    colorMap.set(originator, HUNTER_COLORS[colorMap.size % HUNTER_COLORS.length]!);
+  let hash = 0;
+  for (let i = 0; i < originator.length; i++) {
+    hash = (hash * 31 + originator.charCodeAt(i)) & 0xffffffff;
   }
-  return colorMap.get(originator)!;
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 65%, 38%)`;
 }
 
 // Revealed text for each hunter message, keyed by message index
@@ -45,6 +50,14 @@ watch(
       const msg = chatStore.messages[i];
       if (msg && msg.originator !== 'You') {
         animateMessage(i, msg.message);
+        if (!stationAudioCache.has(msg.originator)) {
+          const station = conversationAiService.getActiveStations().find(s => s.callsign === msg.originator);
+          if (station) {
+            stationAudioCache.set(msg.originator, { frequency: station.frequency, wpm: station.wpm });
+          }
+        }
+        const audio = stationAudioCache.get(msg.originator);
+        playMorse(msg.message, audio?.wpm, audio?.frequency);
       }
     }
     lastAnimatedIndex = newLength - 1;

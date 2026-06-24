@@ -5,7 +5,7 @@ import type { Station } from "@/types/station";
 import { useQsoUtils } from "@/composables/useQsoUtils";
 import { US_STATES } from "@/constants/states";
 
-const HUNTER_COUNT = 6;
+const HUNTER_COUNT = 7;
 
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
@@ -207,7 +207,8 @@ export class ConversationAiService {
         const tOptions = [7, 7, 9, 9];
         const s = sOptions[Math.floor(Math.random() * sOptions.length)]!;
         const t = tOptions[Math.floor(Math.random() * tOptions.length)]!;
-        return `5${s}${t}`;
+        const format9 = (n: number) => n === 9 && Math.random() < 0.95 ? 'N' : String(n);
+        return `5${format9(s)}${format9(t)}`;
     }
 
     private async randomDelay(): Promise<void> {
@@ -217,19 +218,15 @@ export class ConversationAiService {
 
     private createHunter(callsign?: string): Station {
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
-        if (callsign) {
-            return {
-            callsign: `${callsign}`,
-            state,
-            park2parkID: null,
-            qsoStep: 'CQ'
-        };
-        }
+        const frequency = Math.floor(Math.random() * 401) + 400;
+        const wpm = Math.floor(Math.random() * 6) + 15;
         return {
-            callsign: useQsoUtils().generateCall(),
+            callsign: callsign ?? useQsoUtils().generateCall(),
             state,
             park2parkID: null,
-            qsoStep: 'CQ'
+            qsoStep: 'CQ',
+            frequency,
+            wpm,
         };
     }
 }

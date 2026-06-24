@@ -5,4 +5,6 @@ export interface Station {
     state: { code: string, name: string };
     park2parkID: string | null;
     qsoStep: QsoSteps;
+    frequency: number; // Hz, 400–800
+    wpm: number;       // 15–20
 }
