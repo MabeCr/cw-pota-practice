@@ -81,7 +81,7 @@ function handleStart() {
             v-model="parkQuery"
             class="field-input"
             type="text"
-            placeholder="K-1234 or park name…"
+            placeholder="US-1234 or Park Name…"
             autocomplete="off"
             spellcheck="false"
           />
