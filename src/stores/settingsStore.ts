@@ -24,8 +24,8 @@ function defaultState() {
         frequency:  (saved.frequency  as number)    ?? 600,
         wpm:        (saved.wpm        as number)    ?? 20,
         rampTime:   (saved.rampTime   as number)    ?? 8,        // ms
-        ditKey:     (saved.ditKey     as string)    ?? '[',
-        dahKey:     (saved.dahKey     as string)    ?? ']',
+        ditKey:     (saved.ditKey     as string)    ?? 'BracketLeft',
+        dahKey:     (saved.dahKey     as string)    ?? 'BracketRight',
         keyerType:  (saved.keyerType  as KeyerType) ?? 'iambic-a' as KeyerType,
     };
 }

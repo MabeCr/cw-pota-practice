@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
+import { keyLabel } from '@/utils/keyLabel';
 import { useMorse } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { KeyerType } from '@/stores/settingsStore';
@@ -12,8 +13,8 @@ const bindingCapture = ref<'dit' | 'dah' | null>(null);
 function captureKey(event: KeyboardEvent) {
     event.preventDefault();
     if (event.key === 'Escape') { bindingCapture.value = null; return; }
-    if (bindingCapture.value === 'dit') settings.setDitKey(event.key);
-    else if (bindingCapture.value === 'dah') settings.setDahKey(event.key);
+    if (bindingCapture.value === 'dit') settings.setDitKey(event.code);
+    else if (bindingCapture.value === 'dah') settings.setDahKey(event.code);
     bindingCapture.value = null;
 }
 
@@ -125,7 +126,7 @@ onUnmounted(() => {
           :class="{ capturing: bindingCapture === 'dit' }"
           @click="startCapture('dit')"
         >
-          {{ bindingCapture === 'dit' ? 'Press any key…' : settings.ditKey }}
+          {{ bindingCapture === 'dit' ? 'Press any key…' : keyLabel(settings.ditKey) }}
         </button>
       </div>
 
@@ -136,7 +137,7 @@ onUnmounted(() => {
           :class="{ capturing: bindingCapture === 'dah' }"
           @click="startCapture('dah')"
         >
-          {{ bindingCapture === 'dah' ? 'Press any key…' : settings.dahKey }}
+          {{ bindingCapture === 'dah' ? 'Press any key…' : keyLabel(settings.dahKey) }}
         </button>
       </div>
     </section>
