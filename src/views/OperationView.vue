@@ -5,6 +5,7 @@ import LogComponent from '@/components/LogComponent.vue'
 import ConversationComponent from '@/components/ConversationComponent.vue'
 import { useActivationStore } from '@/stores/activationStore'
 import { useChatStore } from '@/stores/chatStore'
+import { getConversationAiService } from '@/services/conversationAiService'
 import type { QSO } from '@/types/activation'
 
 const route  = useRoute()
@@ -19,6 +20,7 @@ const activation   = computed(() => activationStore.getById(activationId))
 // as the baseline state — prevents replaying old messages or re-triggering the AI.
 if (activation.value) {
     chatStore.loadMessages(activation.value.chatHistory)
+    getConversationAiService().prepareForActivation(activationId, activation.value.chatHistory.length)
 } else {
     void router.replace('/operation')
 }

@@ -1,4 +1,6 @@
-import { ref, watch } from "vue";
+import { ref, watch, effectScope } from "vue";
+
+const _scope = effectScope(true); // detached — not owned by any component
 import { useChatStore } from "@/stores/chatStore";
 import type { Message } from "@/types/message";
 import type { Station } from "@/types/station";
@@ -11,9 +13,25 @@ export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
     private inQsoWithCallsign: string | null = null;
     private hunterLastMessage = new Map<string, string>();
+    private lastActivationId: string | null = null;
+    private lastProcessedLength = 0;
 
     constructor() {
-        this.setupWatcher();
+        _scope.run(() => { this.setupWatcher(); });
+    }
+
+    // Call this synchronously in OperationView setup, right after loadMessages.
+    // Resets hunter state when switching to a different activation; preserves it
+    // when returning to the same one. Sets lastProcessedLength so the watcher
+    // ignores the just-loaded history.
+    prepareForActivation(activationId: string, historyLength: number): void {
+        if (this.lastActivationId !== activationId) {
+            this.activeStationList.value = [];
+            this.inQsoWithCallsign = null;
+            this.hunterLastMessage.clear();
+            this.lastActivationId = activationId;
+        }
+        this.lastProcessedLength = historyLength;
     }
 
     getActiveStations(): Station[] {
@@ -34,7 +52,11 @@ export class ConversationAiService {
         const chatStore = useChatStore();
         watch(() => chatStore.messages, async () => {
             const messages = chatStore.messages;
-            if (messages.length === 0) return;
+            if (messages.length === 0) { this.lastProcessedLength = 0; return; }
+
+            // Guard: skip history being loaded back in on navigation
+            if (messages.length <= this.lastProcessedLength) return;
+            this.lastProcessedLength = messages.length;
 
             const lastMessage = messages[messages.length - 1];
             if (!lastMessage || lastMessage.originator !== 'You') return;
@@ -264,4 +286,10 @@ export class ConversationAiService {
             wpm,
         };
     }
+}
+
+let _instance: ConversationAiService | null = null;
+export function getConversationAiService(): ConversationAiService {
+    if (!_instance) _instance = new ConversationAiService();
+    return _instance;
 }

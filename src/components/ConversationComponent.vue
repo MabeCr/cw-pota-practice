@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, reactive, useTemplateRef, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useChatStore } from '../stores/chatStore';
-import { ConversationAiService } from '@/services/conversationAiService';
+import { getConversationAiService } from '@/services/conversationAiService';
 import { useMorse, suspendAudio, startBackgroundNoise } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
 
 const chatStore = useChatStore();
-const conversationAiService = new ConversationAiService();
+const conversationAiService = getConversationAiService();
 const { playMorse, volume, isMuted, setVolume, toggleMute } = useMorse();
 
 // Cache each hunter's audio config on first message so "EE" (sent after
