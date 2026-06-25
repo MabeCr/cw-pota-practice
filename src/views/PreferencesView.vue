@@ -70,6 +70,23 @@ onUnmounted(() => {
           <span class="range-value">{{ settings.hunterMaxWpm }} WPM</span>
         </div>
       </div>
+
+      <div class="pref-row">
+        <label class="pref-label" for="hunterCount">Max # Hunters</label>
+        <div class="range-row">
+          <input
+            id="hunterCount"
+            type="range"
+            min="1"
+            max="10"
+            step="1"
+            :value="settings.hunterCount"
+            @input="settings.setHunterCount(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.hunterCount }}</span>
+        </div>
+      </div>
     </section>
 
     <section class="pref-section">

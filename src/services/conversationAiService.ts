@@ -6,7 +6,6 @@ import { useQsoUtils } from "@/composables/useQsoUtils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { US_STATES } from "@/constants/states";
 
-const HUNTER_COUNT = 3;
 
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
@@ -77,8 +76,8 @@ export class ConversationAiService {
     private async handleCQ(): Promise<void> {
         this.inQsoWithCallsign = null;
 
-        // Top up to HUNTER_COUNT — existing hunters persist until they complete a QSO
-        const needed = HUNTER_COUNT - this.activeStationList.value.length;
+        // Top up to hunterCount — existing hunters persist until they complete a QSO
+        const needed = useSettingsStore().hunterCount - this.activeStationList.value.length;
         for (let i = 0; i < needed; i++) {
             this.activeStationList.value.push(this.createHunter());
         }

@@ -24,7 +24,8 @@ function defaultState() {
         frequency:  (saved.frequency  as number)    ?? 600,
         wpm:        (saved.wpm        as number)    ?? 20,
         rampTime:   (saved.rampTime   as number)    ?? 8,        // ms
-        hunterMaxWpm: (saved.hunterMaxWpm as number) ?? 20,
+        hunterMaxWpm:   (saved.hunterMaxWpm   as number) ?? 20,
+        hunterCount:    (saved.hunterCount    as number) ?? 3,
         ditKey:     (saved.ditKey     as string)    ?? 'BracketLeft',
         dahKey:     (saved.dahKey     as string)    ?? 'BracketRight',
         keyerType:  (saved.keyerType  as KeyerType) ?? 'iambic-a' as KeyerType,
@@ -52,6 +53,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setHunterMaxWpm(value: number) {
             this.hunterMaxWpm = value;
+            saveToStorage(this.$state);
+        },
+        setHunterCount(value: number) {
+            this.hunterCount = value;
             saveToStorage(this.$state);
         },
         setDitKey(value: string) {
