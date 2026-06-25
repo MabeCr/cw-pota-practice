@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref, reactive, useTemplateRef, nextTick, watch, onBeforeUnmount } from 'vue';
+import { ref, reactive, useTemplateRef, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
-import { useMorse, suspendAudio } from '@/composables/useMorse';
+import { useMorse, suspendAudio, startBackgroundNoise } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
 
 const chatStore = useChatStore();
@@ -91,6 +91,10 @@ watch(
   },
   { deep: true }
 );
+
+onMounted(() => {
+  startBackgroundNoise();
+});
 
 onBeforeUnmount(() => {
   suspendAudio();

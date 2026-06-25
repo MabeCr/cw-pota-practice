@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
-import { useMorse } from '@/composables/useMorse';
+import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { KeyerType } from '@/stores/settingsStore';
 
@@ -87,10 +87,27 @@ onUnmounted(() => {
           <span class="range-value">{{ settings.hunterCount }}</span>
         </div>
       </div>
+
+      <div class="pref-row">
+        <label class="pref-label" for="noiseLevel">Band Noise</label>
+        <div class="range-row">
+          <input
+            id="noiseLevel"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            :value="settings.noiseLevel"
+            @input="setNoiseLevel(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.noiseLevel === 0 ? 'Off' : settings.noiseLevel + '%' }}</span>
+        </div>
+      </div>
     </section>
 
     <section class="pref-section">
-      <h2>Keyer</h2>
+      <h2>Keyer Settings</h2>
 
       <div class="pref-row">
         <label class="pref-label" for="wpm">Keyer WPM</label>

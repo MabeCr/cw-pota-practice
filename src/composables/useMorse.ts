@@ -11,6 +11,48 @@ let audioContext: AudioContext | null = null;
 let compressor: DynamicsCompressorNode | null = null;
 let masterGain: GainNode | null = null;
 
+let noiseSource: AudioBufferSourceNode | null = null;
+let noiseGain: GainNode | null = null;
+
+const MAX_NOISE_GAIN = 0.4;
+
+function applyNoiseLevel(): void {
+    if (!noiseGain || !audioContext) return;
+    const level = useSettingsStore().noiseLevel;
+    noiseGain.gain.setValueAtTime((level / 100) * MAX_NOISE_GAIN, audioContext.currentTime);
+}
+
+function startNoise(ctx: AudioContext, target: AudioNode): void {
+    if (noiseSource) { applyNoiseLevel(); return; }
+
+    // 10-second white noise buffer — long loop avoids audible seam
+    const bufferSize = ctx.sampleRate * 10;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    // HP + LP chain: simulate receiver bandwidth (≈200 Hz – 3 kHz)
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(200, ctx.currentTime);
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(3000, ctx.currentTime);
+
+    noiseGain = ctx.createGain();
+    applyNoiseLevel();
+
+    noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+    noiseSource.loop = true;
+    noiseSource.connect(hp);
+    hp.connect(lp);
+    lp.connect(noiseGain);
+    noiseGain.connect(target);
+    noiseSource.start();
+}
+
 const volume = ref(0.8);   // 0–1
 const isMuted = ref(false);
 
@@ -25,6 +67,9 @@ function applyVolume(): void {
 
 export function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
     if (!audioContext || audioContext.state === 'closed') {
+        noiseSource = null;
+        noiseGain = null;
+
         audioContext = new AudioContext();
 
         compressor = audioContext.createDynamicsCompressor();
@@ -39,7 +84,17 @@ export function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
     } else if (audioContext.state === 'suspended') {
         void audioContext.resume();
     }
+    startNoise(audioContext, compressor!);
     return { ctx: audioContext, target: compressor! };
+}
+
+export function startBackgroundNoise(): void {
+    getAudioGraph(); // ensures context is live and noise is running
+}
+
+export function setNoiseLevel(level: number): void {
+    useSettingsStore().setNoiseLevel(level);
+    applyNoiseLevel();
 }
 
 export function suspendAudio(): void {

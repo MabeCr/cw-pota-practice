@@ -26,6 +26,7 @@ function defaultState() {
         rampTime:   (saved.rampTime   as number)    ?? 8,        // ms
         hunterMaxWpm:   (saved.hunterMaxWpm   as number) ?? 20,
         hunterCount:    (saved.hunterCount    as number) ?? 3,
+        noiseLevel:     (saved.noiseLevel     as number) ?? 15,
         ditKey:     (saved.ditKey     as string)    ?? 'BracketLeft',
         dahKey:     (saved.dahKey     as string)    ?? 'BracketRight',
         keyerType:  (saved.keyerType  as KeyerType) ?? 'iambic-a' as KeyerType,
@@ -57,6 +58,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setHunterCount(value: number) {
             this.hunterCount = value;
+            saveToStorage(this.$state);
+        },
+        setNoiseLevel(value: number) {
+            this.noiseLevel = value;
             saveToStorage(this.$state);
         },
         setDitKey(value: string) {
