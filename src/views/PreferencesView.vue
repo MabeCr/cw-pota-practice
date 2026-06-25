@@ -52,6 +52,27 @@ onUnmounted(() => {
     </section>
 
     <section class="pref-section">
+      <h2>Difficulty Modifiers</h2>
+
+      <div class="pref-row">
+        <label class="pref-label" for="hunterMaxWpm">Hunter Max WPM</label>
+        <div class="range-row">
+          <input
+            id="hunterMaxWpm"
+            type="range"
+            min="5"
+            max="40"
+            step="1"
+            :value="settings.hunterMaxWpm"
+            @input="settings.setHunterMaxWpm(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.hunterMaxWpm }} WPM</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="pref-section">
       <h2>Keyer</h2>
 
       <div class="pref-row">

@@ -3,6 +3,7 @@ import { useChatStore } from "@/stores/chatStore";
 import type { Message } from "@/types/message";
 import type { Station } from "@/types/station";
 import { useQsoUtils } from "@/composables/useQsoUtils";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { US_STATES } from "@/constants/states";
 
 const HUNTER_COUNT = 3;
@@ -249,7 +250,9 @@ export class ConversationAiService {
     private createHunter(callsign?: string): Station {
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
         const frequency = Math.floor(Math.random() * 401) + 400;
-        const wpm = Math.floor(Math.random() * 6) + 15;
+        const maxWpm = useSettingsStore().hunterMaxWpm;
+        const minWpm = Math.max(5, maxWpm - 5);
+        const wpm = Math.floor(Math.random() * (maxWpm - minWpm + 1)) + minWpm;
         const park2parkID = Math.random() < 0.08
             ? `K-${Math.floor(Math.random() * 9999) + 1}`
             : null;
