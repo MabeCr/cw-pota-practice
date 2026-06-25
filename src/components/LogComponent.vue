@@ -1,53 +1,67 @@
 <script lang="ts" setup>
 import { ref, nextTick, watch, useTemplateRef, computed } from 'vue'
 import { useQsoUtils } from '../composables/useQsoUtils'
+import type { QSO } from '../types/activation'
 
-interface QSO {
-  date: string
-  theirCall: string
-  sentRST: string
-  receivedRST: string
-  theirState: string
-}
+const props = defineProps<{ qsoList: QSO[] }>()
+const emit  = defineEmits<{ 'add-qso': [qso: QSO] }>()
 
 const tableContainer   = useTemplateRef<HTMLDivElement>('tableContainer')
 const theirCallInput   = useTemplateRef<HTMLInputElement>('theirCallInput')
 const sentRSTInput     = useTemplateRef<HTMLInputElement>('sentRSTInput')
 const receivedRSTInput = useTemplateRef<HTMLInputElement>('receivedRSTInput')
 const theirStateInput  = useTemplateRef<HTMLInputElement>('theirStateInput')
+const theirParkInput   = useTemplateRef<HTMLInputElement>('theirParkInput')
 
-const qsoList    = ref<QSO[]>([])
-const isActivated = computed(() => qsoList.value.length >= 10)
+const uniqueContactCount = computed(() => new Set(props.qsoList.map(q => q.theirCall)).size)
+const isActivated = computed(() => uniqueContactCount.value >= 10)
 
+const isP2P = ref(false)
 const newQSO = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
 
-// Only flag errors once the user has typed something in a field
 const theirCallError   = computed(() => newQSO.value.theirCall.length   > 0 && !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase()))
 const sentRstError     = computed(() => newQSO.value.sentRST.length     > 0 && !useQsoUtils().validateRST(newQSO.value.sentRST))
 const receivedRstError = computed(() => newQSO.value.receivedRST.length > 0 && !useQsoUtils().validateRST(newQSO.value.receivedRST))
-const stateError       = computed(() => newQSO.value.theirState.length  > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
+const stateError = computed(() => newQSO.value.theirState.length > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
+
+function toggleP2P() {
+  isP2P.value = !isP2P.value
+  if (!isP2P.value) newQSO.value.theirPark = ''
+}
+
+function onStateEnter() {
+  if (isP2P.value) theirParkInput.value?.focus()
+  else addQSO()
+}
 
 function addQSO() {
-  newQSO.value.theirCall    = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.sentRST      = newQSO.value.sentRST.replace(/\s+/g, '')
-  newQSO.value.receivedRST  = newQSO.value.receivedRST.replace(/\s+/g, '')
-  newQSO.value.theirState   = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.date         = new Date().toLocaleTimeString('en-US', {
+  newQSO.value.theirCall   = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.sentRST     = newQSO.value.sentRST.replace(/\s+/g, '')
+  newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
+  newQSO.value.date        = new Date().toLocaleTimeString('en-US', {
     timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit',
   }) + 'z'
 
-  if (!useQsoUtils().validateCall(newQSO.value.theirCall))    return
-  if (!useQsoUtils().validateRST(newQSO.value.sentRST))       return
-  if (!useQsoUtils().validateRST(newQSO.value.receivedRST))   return
-  if (!useQsoUtils().validateState(newQSO.value.theirState))  return
+  if (!useQsoUtils().validateCall(newQSO.value.theirCall))  return
+  if (!useQsoUtils().validateRST(newQSO.value.sentRST))     return
+  if (!useQsoUtils().validateRST(newQSO.value.receivedRST)) return
 
-  qsoList.value.push({ ...newQSO.value })
+  newQSO.value.theirState = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
+  if (!useQsoUtils().validateState(newQSO.value.theirState)) return
+
+  if (isP2P.value) {
+    newQSO.value.theirPark = (newQSO.value.theirPark ?? '').toUpperCase().replace(/\s+/g, '')
+    if (!newQSO.value.theirPark) return
+  } else {
+    newQSO.value.theirPark = ''
+  }
+
+  emit('add-qso', { ...newQSO.value })
   newQSO.value = { date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' }
+  isP2P.value = false
   theirCallInput.value?.focus()
 }
 
-// For RST fields: Enter on an empty field fills "599" and advances focus.
-// Enter on a filled field submits the QSO.
 function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', next: HTMLInputElement | null) {
   if (event.key !== 'Enter') return
   if (!newQSO.value[field]) {
@@ -59,10 +73,10 @@ function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', ne
   }
 }
 
-watch(qsoList, async () => {
+watch(() => props.qsoList.length, async () => {
   await nextTick()
   if (tableContainer.value) tableContainer.value.scrollTop = tableContainer.value.scrollHeight
-}, { deep: true })
+})
 </script>
 
 <template>
@@ -71,7 +85,7 @@ watch(qsoList, async () => {
     <div class="log-header">
       <h2 class="log-title">QSO Log</h2>
       <div class="activation-badge" :class="{ activated: isActivated }">
-        <span v-if="!isActivated">{{ qsoList.length }}&thinsp;/&thinsp;10</span>
+        <span v-if="!isActivated">{{ uniqueContactCount }}&thinsp;/&thinsp;10</span>
         <span v-else>✓ Activated</span>
       </div>
     </div>
@@ -84,7 +98,7 @@ watch(qsoList, async () => {
             <th>Callsign</th>
             <th>Sent</th>
             <th>Rcvd</th>
-            <th>State</th>
+            <th>Location</th>
           </tr>
         </thead>
         <tbody>
@@ -93,7 +107,9 @@ watch(qsoList, async () => {
             <td class="mono">{{ qso.theirCall }}</td>
             <td class="mono">{{ qso.sentRST }}</td>
             <td class="mono">{{ qso.receivedRST }}</td>
-            <td class="mono">{{ qso.theirState }}</td>
+            <td class="mono exch-cell">
+              {{ qso.theirState }}<template v-if="qso.theirPark"><span class="exch-sep">·</span>{{ qso.theirPark }}<span class="p2p-badge">P2P</span></template>
+            </td>
           </tr>
           <tr v-if="qsoList.length === 0" class="empty-row">
             <td colspan="5">No contacts logged yet.</td>
@@ -117,7 +133,7 @@ watch(qsoList, async () => {
         />
       </div>
 
-      <div class="input-field input-field--narrow">
+      <div class="input-field input-field--fixed">
         <label for="sentRST">Sent RST</label>
         <input
           id="sentRST"
@@ -130,7 +146,7 @@ watch(qsoList, async () => {
         />
       </div>
 
-      <div class="input-field input-field--narrow">
+      <div class="input-field input-field--fixed">
         <label for="receivedRST">Rcvd RST</label>
         <input
           id="receivedRST"
@@ -143,7 +159,7 @@ watch(qsoList, async () => {
         />
       </div>
 
-      <div class="input-field input-field--narrow">
+      <div class="input-field input-field--fixed">
         <label for="theirState">State</label>
         <input
           id="theirState"
@@ -153,6 +169,25 @@ watch(qsoList, async () => {
           autocomplete="off" spellcheck="false"
           @input="newQSO.theirState = newQSO.theirState.toUpperCase()"
           :class="{ error: stateError }"
+          @keydown.enter="onStateEnter"
+        />
+      </div>
+
+      <div class="input-field input-field--p2p">
+        <label>&nbsp;</label>
+        <button class="p2p-toggle" :class="{ active: isP2P }" @click.prevent="toggleP2P" tabindex="-1">P2P</button>
+      </div>
+
+      <div v-if="isP2P" class="input-field input-field--narrow">
+        <label for="theirPark">Park Ref</label>
+        <input
+          id="theirPark"
+          ref="theirParkInput"
+          v-model="newQSO.theirPark"
+          type="text"
+          placeholder="K1995"
+          autocomplete="off" spellcheck="false"
+          @input="newQSO.theirPark = (newQSO.theirPark ?? '').toUpperCase()"
           @keydown.enter="addQSO"
         />
       </div>
@@ -176,7 +211,6 @@ watch(qsoList, async () => {
   background: #fff;
 }
 
-/* ── header ── */
 .log-header {
   display: flex;
   align-items: center;
@@ -210,7 +244,6 @@ watch(qsoList, async () => {
   color: #065f46;
 }
 
-/* ── table ── */
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -273,7 +306,6 @@ watch(qsoList, async () => {
   padding: 24px 0;
 }
 
-/* ── input row ── */
 .input-row {
   display: flex;
   gap: 8px;
@@ -290,6 +322,14 @@ watch(qsoList, async () => {
 
 .input-field--narrow {
   flex: 1;
+}
+
+.input-field--fixed {
+  flex: 0 0 72px;
+}
+
+.input-field--p2p {
+  flex: 0 0 auto;
 }
 
 .input-field--btn {
@@ -343,5 +383,52 @@ watch(qsoList, async () => {
 
 .add-button:hover {
   background: #2b5aab;
+}
+
+.p2p-toggle {
+  width: 100%;
+  padding: 7px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid #d4d4d4;
+  border-radius: 5px;
+  background: #fafafa;
+  color: #aaa;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.p2p-toggle.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.p2p-toggle:hover:not(.active) {
+  border-color: #b0b0b0;
+  color: #777;
+}
+
+.exch-cell {
+  white-space: nowrap;
+}
+
+.exch-sep {
+  margin: 0 5px;
+  color: #ccc;
+  font-weight: 400;
+}
+
+.p2p-badge {
+  margin-left: 5px;
+  padding: 1px 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 4px;
+  vertical-align: middle;
 }
 </style>

@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useKeyer } from '@/composables/useKeyer';
+import { keyLabel } from '@/utils/keyLabel';
 
 const emit = defineEmits<{
     character:    [char: string];
@@ -42,24 +43,29 @@ function onBlur() {
 }
 
 function onKeyDown(event: KeyboardEvent) {
-    if (event.repeat) return;
-    if (event.key === settings.ditKey) {
+    const isDit = event.code === settings.ditKey || event.key === settings.ditKey;
+    const isDah = event.code === settings.dahKey || event.key === settings.dahKey;
+
+    if (isDit) {
         event.preventDefault();
         onDitDown();
-    } else if (event.key === settings.dahKey) {
+    }
+    if (isDah) {
         event.preventDefault();
         onDahDown();
-    } else if (event.key === 'Enter') {
+    }
+    if (!isDit && !isDah && !event.repeat && event.key === 'Enter') {
         event.preventDefault();
         emit('send');
     }
 }
 
 function onKeyUp(event: KeyboardEvent) {
-    if (event.key === settings.ditKey) {
+    if (event.code === settings.ditKey || event.key === settings.ditKey) {
         event.preventDefault();
         onDitUp();
-    } else if (event.key === settings.dahKey) {
+    }
+    if (event.code === settings.dahKey || event.key === settings.dahKey) {
         event.preventDefault();
         onDahUp();
     }
@@ -83,11 +89,11 @@ function onKeyUp(event: KeyboardEvent) {
     <div class="key-indicators">
       <div class="key-square" :class="{ lit: isDitPressed }">
         <span class="key-label">{{ ditLabel }}</span>
-        <span class="key-binding">{{ settings.ditKey }}</span>
+        <span class="key-binding">{{ keyLabel(settings.ditKey) }}</span>
       </div>
       <div class="key-square" :class="{ lit: isDahPressed }">
         <span class="key-label">{{ dahLabel }}</span>
-        <span class="key-binding">{{ settings.dahKey }}</span>
+        <span class="key-binding">{{ keyLabel(settings.dahKey) }}</span>
       </div>
     </div>
   </div>

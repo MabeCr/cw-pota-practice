@@ -9,5 +9,11 @@ export const useChatStore = defineStore('chat', {
         addMessage(originator: string, message: string) {
             this.messages.push({ originator, message });
         },
+        loadMessages(messages: Message[]) {
+            this.messages = [...messages];
+        },
+        clearMessages() {
+            this.messages = [];
+        },
     },
 });

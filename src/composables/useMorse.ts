@@ -36,8 +36,16 @@ export function getAudioGraph(): { ctx: AudioContext; target: AudioNode } {
 
         compressor.connect(masterGain);
         masterGain.connect(audioContext.destination);
+    } else if (audioContext.state === 'suspended') {
+        void audioContext.resume();
     }
     return { ctx: audioContext, target: compressor! };
+}
+
+export function suspendAudio(): void {
+    if (audioContext && audioContext.state === 'running') {
+        void audioContext.suspend();
+    }
 }
 
 export function useMorse() {
