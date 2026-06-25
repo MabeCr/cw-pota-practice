@@ -1,14 +1,10 @@
 <script lang="ts" setup>
 import { ref, nextTick, watch, useTemplateRef, computed } from 'vue'
 import { useQsoUtils } from '../composables/useQsoUtils'
+import type { QSO } from '../types/activation'
 
-interface QSO {
-  date: string
-  theirCall: string
-  sentRST: string
-  receivedRST: string
-  theirState: string
-}
+const props = defineProps<{ qsoList: QSO[] }>()
+const emit  = defineEmits<{ 'add-qso': [qso: QSO] }>()
 
 const tableContainer   = useTemplateRef<HTMLDivElement>('tableContainer')
 const theirCallInput   = useTemplateRef<HTMLInputElement>('theirCallInput')
@@ -16,38 +12,34 @@ const sentRSTInput     = useTemplateRef<HTMLInputElement>('sentRSTInput')
 const receivedRSTInput = useTemplateRef<HTMLInputElement>('receivedRSTInput')
 const theirStateInput  = useTemplateRef<HTMLInputElement>('theirStateInput')
 
-const qsoList    = ref<QSO[]>([])
-const isActivated = computed(() => qsoList.value.length >= 10)
+const isActivated = computed(() => props.qsoList.length >= 10)
 
 const newQSO = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
 
-// Only flag errors once the user has typed something in a field
 const theirCallError   = computed(() => newQSO.value.theirCall.length   > 0 && !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase()))
 const sentRstError     = computed(() => newQSO.value.sentRST.length     > 0 && !useQsoUtils().validateRST(newQSO.value.sentRST))
 const receivedRstError = computed(() => newQSO.value.receivedRST.length > 0 && !useQsoUtils().validateRST(newQSO.value.receivedRST))
 const stateError       = computed(() => newQSO.value.theirState.length  > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
 
 function addQSO() {
-  newQSO.value.theirCall    = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.sentRST      = newQSO.value.sentRST.replace(/\s+/g, '')
-  newQSO.value.receivedRST  = newQSO.value.receivedRST.replace(/\s+/g, '')
-  newQSO.value.theirState   = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.date         = new Date().toLocaleTimeString('en-US', {
+  newQSO.value.theirCall   = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.sentRST     = newQSO.value.sentRST.replace(/\s+/g, '')
+  newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
+  newQSO.value.theirState  = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
+  newQSO.value.date        = new Date().toLocaleTimeString('en-US', {
     timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit',
   }) + 'z'
 
-  if (!useQsoUtils().validateCall(newQSO.value.theirCall))    return
-  if (!useQsoUtils().validateRST(newQSO.value.sentRST))       return
-  if (!useQsoUtils().validateRST(newQSO.value.receivedRST))   return
-  if (!useQsoUtils().validateState(newQSO.value.theirState))  return
+  if (!useQsoUtils().validateCall(newQSO.value.theirCall))   return
+  if (!useQsoUtils().validateRST(newQSO.value.sentRST))      return
+  if (!useQsoUtils().validateRST(newQSO.value.receivedRST))  return
+  if (!useQsoUtils().validateState(newQSO.value.theirState)) return
 
-  qsoList.value.push({ ...newQSO.value })
+  emit('add-qso', { ...newQSO.value })
   newQSO.value = { date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' }
   theirCallInput.value?.focus()
 }
 
-// For RST fields: Enter on an empty field fills "599" and advances focus.
-// Enter on a filled field submits the QSO.
 function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', next: HTMLInputElement | null) {
   if (event.key !== 'Enter') return
   if (!newQSO.value[field]) {
@@ -59,10 +51,10 @@ function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', ne
   }
 }
 
-watch(qsoList, async () => {
+watch(() => props.qsoList.length, async () => {
   await nextTick()
   if (tableContainer.value) tableContainer.value.scrollTop = tableContainer.value.scrollHeight
-}, { deep: true })
+})
 </script>
 
 <template>
@@ -176,7 +168,6 @@ watch(qsoList, async () => {
   background: #fff;
 }
 
-/* ── header ── */
 .log-header {
   display: flex;
   align-items: center;
@@ -210,7 +201,6 @@ watch(qsoList, async () => {
   color: #065f46;
 }
 
-/* ── table ── */
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -273,7 +263,6 @@ watch(qsoList, async () => {
   padding: 24px 0;
 }
 
-/* ── input row ── */
 .input-row {
   display: flex;
   gap: 8px;

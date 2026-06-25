@@ -93,7 +93,7 @@ watch(
 );
 
 watch(
-  chatStore.messages,
+  () => chatStore.messages.length,
   async () => {
     await nextTick();
     const container = chatContainer.value;
@@ -101,7 +101,7 @@ watch(
       container.scrollTop = container.scrollHeight;
     }
   },
-  { deep: true },
+  { immediate: true },
 )
 </script>
 

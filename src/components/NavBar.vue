@@ -4,7 +4,7 @@
     <div class="navbar-links">
       <RouterLink to="/" :end="true">Home</RouterLink>
       <RouterLink to="/operation">Operation</RouterLink>
-      <RouterLink to="/log">Log</RouterLink>
+      <RouterLink to="/logbook">Logbook</RouterLink>
       <RouterLink to="/preferences">Preferences</RouterLink>
     </div>
   </nav>
