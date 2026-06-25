@@ -22,6 +22,15 @@ function formatDate(iso: string): string {
 function resume(id: string) {
     void router.push(`/operation/${id}`)
 }
+
+function uniqueContacts(act: Activation): number {
+    return new Set(act.qsoList.map(q => q.theirCall)).size
+}
+
+function deleteActivation(id: string, parkName: string) {
+    if (!confirm(`Delete the activation for "${parkName}"? This cannot be undone.`)) return
+    activationStore.deleteActivation(id)
+}
 </script>
 
 <template>
@@ -38,7 +47,8 @@ function resume(id: string) {
             <th>Park</th>
             <th>Callsign</th>
             <th>Date</th>
-            <th>QSOs</th>
+            <th class="center">QSOs</th>
+            <th class="center">Activated</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -52,14 +62,22 @@ function resume(id: string) {
             <td class="mono">{{ act.callsign }}</td>
             <td class="mono">{{ formatDate(act.startedAt) }}</td>
             <td class="mono center">{{ act.qsoList.length }}</td>
+            <td class="center">
+              <span class="activated-icon" :class="uniqueContacts(act) >= 10 ? 'icon-yes' : 'icon-no'">
+                {{ uniqueContacts(act) >= 10 ? '✓' : '✗' }}
+              </span>
+            </td>
             <td>
               <span class="badge" :class="act.endedAt ? 'badge-ended' : 'badge-active'">
                 {{ act.endedAt ? 'Ended' : 'Active' }}
               </span>
             </td>
             <td class="action-cell">
-              <button class="resume-btn" @click="resume(act.id)">
+              <button :class="act.endedAt ? 'view-btn' : 'resume-btn'" @click="resume(act.id)">
                 {{ act.endedAt ? 'View' : 'Resume' }}
+              </button>
+              <button class="delete-btn" @click="deleteActivation(act.id, act.parkName)" title="Delete activation">
+                ✕
               </button>
             </td>
           </tr>
@@ -173,7 +191,7 @@ function resume(id: string) {
   letter-spacing: 0.03em;
 }
 
-.center {
+.logbook-table .center {
   text-align: center;
 }
 
@@ -196,14 +214,26 @@ function resume(id: string) {
   color: #666;
 }
 
+.activated-icon {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.icon-yes {
+  color: #16a34a;
+}
+
+.icon-no {
+  color: #d1d5db;
+}
+
 .action-cell {
   text-align: right;
 }
 
-.resume-btn {
+.resume-btn,
+.view-btn {
   padding: 5px 14px;
-  background: #3771d4;
-  color: #fff;
   border: none;
   border-radius: 5px;
   font-size: 0.82rem;
@@ -213,8 +243,40 @@ function resume(id: string) {
   white-space: nowrap;
 }
 
+.resume-btn {
+  background: #16a34a;
+  color: #fff;
+}
+
 .resume-btn:hover {
+  background: #15803d;
+}
+
+.view-btn {
+  background: #3771d4;
+  color: #fff;
+}
+
+.view-btn:hover {
   background: #2b5aab;
+}
+
+.delete-btn {
+  margin-left: 6px;
+  padding: 5px 9px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  color: #aaa;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
 }
 
 .empty-state {

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref, reactive, useTemplateRef, nextTick, watch } from 'vue';
+import { ref, reactive, useTemplateRef, nextTick, watch, onBeforeUnmount } from 'vue';
 import { useChatStore } from '../stores/chatStore';
 import { ConversationAiService } from '@/services/conversationAiService';
-import { useMorse } from '@/composables/useMorse';
+import { useMorse, suspendAudio } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
 
 const chatStore = useChatStore();
@@ -52,7 +52,7 @@ function animateMessage(index: number, fullText: string): void {
   typeNext();
 }
 
-let lastAnimatedIndex = -1;
+let lastAnimatedIndex = chatStore.messages.length - 1;
 
 watch(
   () => chatStore.messages.length,
@@ -91,6 +91,10 @@ watch(
   },
   { deep: true }
 );
+
+onBeforeUnmount(() => {
+  suspendAudio();
+});
 
 watch(
   () => chatStore.messages.length,

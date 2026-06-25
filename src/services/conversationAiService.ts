@@ -96,7 +96,11 @@ export class ConversationAiService {
         if (this.inQsoWithCallsign !== null) return;
 
         hunter.qsoStep = 'HUNTER_CALL';
-        this.sendHunterMessage(hunter, hunter.callsign.toUpperCase());
+        const call = hunter.callsign.toUpperCase();
+        const callMsg = hunter.park2parkID
+            ? (Math.random() < 0.5 ? `${call} P2P` : `P2P ${call}`)
+            : call;
+        this.sendHunterMessage(hunter, callMsg);
     }
 
     private async repeatLastMessage(hunter: Station, bypassQsoGuard = false): Promise<void> {
@@ -119,7 +123,10 @@ export class ConversationAiService {
 
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
-                this.sendHunterMessage(hunter, `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`);
+                const msg = hunter.park2parkID
+                    ? `BK TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} BK`
+                    : `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`;
+                this.sendHunterMessage(hunter, msg);
                 hunter.qsoStep = 'HUNTER_RST';
 
             } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
@@ -243,10 +250,13 @@ export class ConversationAiService {
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
         const frequency = Math.floor(Math.random() * 401) + 400;
         const wpm = Math.floor(Math.random() * 6) + 15;
+        const park2parkID = Math.random() < 0.08
+            ? `K-${Math.floor(Math.random() * 9999) + 1}`
+            : null;
         return {
             callsign: callsign ?? useQsoUtils().generateCall(),
             state,
-            park2parkID: null,
+            park2parkID,
             qsoStep: 'CQ',
             frequency,
             wpm,

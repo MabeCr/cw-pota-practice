@@ -4,6 +4,7 @@ export interface QSO {
   sentRST: string
   receivedRST: string
   theirState: string
+  theirPark?: string
 }
 
 export interface ChatMessage {

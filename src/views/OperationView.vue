@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LogComponent from '@/components/LogComponent.vue'
 import ConversationComponent from '@/components/ConversationComponent.vue'
@@ -15,15 +15,13 @@ const chatStore       = useChatStore()
 const activationId = route.params.id as string
 const activation   = computed(() => activationStore.getById(activationId))
 
-// Redirect if the activation doesn't exist
-if (!activation.value) {
+// Load history synchronously so ConversationComponent's watchers see it
+// as the baseline state — prevents replaying old messages or re-triggering the AI.
+if (activation.value) {
+    chatStore.loadMessages(activation.value.chatHistory)
+} else {
     void router.replace('/operation')
 }
-
-onMounted(() => {
-    if (!activation.value) return
-    chatStore.loadMessages(activation.value.chatHistory)
-})
 
 onBeforeUnmount(() => {
     activationStore.saveChatHistory(activationId, chatStore.messages)

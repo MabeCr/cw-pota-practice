@@ -72,5 +72,10 @@ export const useActivationStore = defineStore('activations', {
             a.endedAt = null
             save(this.activations)
         },
+
+        deleteActivation(id: string): void {
+            this.activations = this.activations.filter(x => x.id !== id)
+            save(this.activations)
+        },
     },
 })
