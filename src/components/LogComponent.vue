@@ -3,7 +3,7 @@ import { ref, nextTick, watch, useTemplateRef, computed } from 'vue'
 import { useQsoUtils } from '../composables/useQsoUtils'
 import type { QSO } from '../types/activation'
 
-const props = defineProps<{ qsoList: QSO[] }>()
+const props = defineProps<{ qsoList: QSO[]; readonly?: boolean }>()
 const emit  = defineEmits<{ 'add-qso': [qso: QSO] }>()
 
 const tableContainer   = useTemplateRef<HTMLDivElement>('tableContainer')
@@ -118,7 +118,7 @@ watch(() => props.qsoList.length, async () => {
       </table>
     </div>
 
-    <div class="input-row">
+    <div class="input-row" :class="{ 'input-row--disabled': readonly }">
       <div class="input-field">
         <label for="callsign">Callsign</label>
         <input
@@ -130,6 +130,7 @@ watch(() => props.qsoList.length, async () => {
           @input="newQSO.theirCall = newQSO.theirCall.toUpperCase()"
           :class="{ error: theirCallError }"
           @keydown.enter="addQSO"
+          :disabled="readonly"
         />
       </div>
 
@@ -143,6 +144,7 @@ watch(() => props.qsoList.length, async () => {
           autocomplete="off" spellcheck="false"
           :class="{ error: sentRstError }"
           @keydown="onRstKeydown($event, 'sentRST', receivedRSTInput)"
+          :disabled="readonly"
         />
       </div>
 
@@ -156,6 +158,7 @@ watch(() => props.qsoList.length, async () => {
           autocomplete="off" spellcheck="false"
           :class="{ error: receivedRstError }"
           @keydown="onRstKeydown($event, 'receivedRST', theirStateInput)"
+          :disabled="readonly"
         />
       </div>
 
@@ -170,12 +173,13 @@ watch(() => props.qsoList.length, async () => {
           @input="newQSO.theirState = newQSO.theirState.toUpperCase()"
           :class="{ error: stateError }"
           @keydown.enter="onStateEnter"
+          :disabled="readonly"
         />
       </div>
 
       <div class="input-field input-field--p2p">
         <label>&nbsp;</label>
-        <button class="p2p-toggle" :class="{ active: isP2P }" @click.prevent="toggleP2P" tabindex="-1">P2P</button>
+        <button class="p2p-toggle" :class="{ active: isP2P }" @click.prevent="toggleP2P" tabindex="-1" :disabled="readonly">P2P</button>
       </div>
 
       <div v-if="isP2P" class="input-field input-field--narrow">
@@ -189,12 +193,13 @@ watch(() => props.qsoList.length, async () => {
           autocomplete="off" spellcheck="false"
           @input="newQSO.theirPark = (newQSO.theirPark ?? '').toUpperCase()"
           @keydown.enter="addQSO"
+          :disabled="readonly"
         />
       </div>
 
       <div class="input-field input-field--btn">
         <label>&nbsp;</label>
-        <button class="add-button" @click="addQSO">Log</button>
+        <button class="add-button" @click="addQSO" :disabled="readonly">Log</button>
       </div>
     </div>
 
@@ -366,6 +371,11 @@ watch(() => props.qsoList.length, async () => {
 .input-field input.error {
   border-color: #e53e3e;
   box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.15);
+}
+
+.input-row--disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .add-button {

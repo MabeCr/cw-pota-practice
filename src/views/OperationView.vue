@@ -5,6 +5,7 @@ import LogComponent from '@/components/LogComponent.vue'
 import ConversationComponent from '@/components/ConversationComponent.vue'
 import { useActivationStore } from '@/stores/activationStore'
 import { useChatStore } from '@/stores/chatStore'
+import { getConversationAiService } from '@/services/conversationAiService'
 import type { QSO } from '@/types/activation'
 
 const route  = useRoute()
@@ -19,6 +20,7 @@ const activation   = computed(() => activationStore.getById(activationId))
 // as the baseline state — prevents replaying old messages or re-triggering the AI.
 if (activation.value) {
     chatStore.loadMessages(activation.value.chatHistory)
+    getConversationAiService().prepareForActivation(activationId, activation.value.chatHistory.length)
 } else {
     void router.replace('/operation')
 }
@@ -74,15 +76,20 @@ function formatDate(iso: string): string {
       </button>
     </div>
 
+    <div v-if="activation.endedAt" class="ended-banner">
+      Activation ended — Log and Send are disabled.
+    </div>
+
     <div class="app-container">
       <div class="left-half">
         <LogComponent
           :qso-list="activation.qsoList"
+          :readonly="!!activation.endedAt"
           @add-qso="onAddQso"
         />
       </div>
       <div class="right-half">
-        <ConversationComponent />
+        <ConversationComponent :readonly="!!activation.endedAt" />
       </div>
     </div>
 
@@ -149,6 +156,15 @@ function formatDate(iso: string): string {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.ended-banner {
+  padding: 6px 20px;
+  background: #fef3c7;
+  border-bottom: 1px solid #fcd34d;
+  font-size: 0.8rem;
+  color: #92400e;
+  flex-shrink: 0;
 }
 
 .toggle-btn {

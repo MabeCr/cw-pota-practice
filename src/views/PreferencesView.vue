@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
-import { useMorse } from '@/composables/useMorse';
+import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { KeyerType } from '@/stores/settingsStore';
 
@@ -32,6 +32,9 @@ onUnmounted(() => {
   <div class="preferences-container">
     <h1>Preferences</h1>
 
+    <div class="pref-grid">
+
+    <div class="pref-col">
     <section class="pref-section">
       <h2>Station</h2>
 
@@ -52,7 +55,64 @@ onUnmounted(() => {
     </section>
 
     <section class="pref-section">
-      <h2>Keyer</h2>
+      <h2>Difficulty Modifiers</h2>
+
+      <div class="pref-row">
+        <label class="pref-label" for="hunterMaxWpm">Hunter Max WPM</label>
+        <div class="range-row">
+          <input
+            id="hunterMaxWpm"
+            type="range"
+            min="5"
+            max="40"
+            step="1"
+            :value="settings.hunterMaxWpm"
+            @input="settings.setHunterMaxWpm(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.hunterMaxWpm }} WPM</span>
+        </div>
+      </div>
+
+      <div class="pref-row">
+        <label class="pref-label" for="hunterCount">Max # Hunters</label>
+        <div class="range-row">
+          <input
+            id="hunterCount"
+            type="range"
+            min="1"
+            max="10"
+            step="1"
+            :value="settings.hunterCount"
+            @input="settings.setHunterCount(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.hunterCount }}</span>
+        </div>
+      </div>
+
+      <div class="pref-row">
+        <label class="pref-label" for="noiseLevel">Band Noise</label>
+        <div class="range-row">
+          <input
+            id="noiseLevel"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            :value="settings.noiseLevel"
+            @input="setNoiseLevel(parseInt(($event.target as HTMLInputElement).value))"
+            class="pref-slider"
+          />
+          <span class="range-value">{{ settings.noiseLevel === 0 ? 'Off' : settings.noiseLevel + '%' }}</span>
+        </div>
+      </div>
+    </section>
+    </div><!-- pref-col left -->
+
+    <div class="pref-col">
+    <section class="pref-section">
+      <h2>Keyer Settings</h2>
 
       <div class="pref-row">
         <label class="pref-label" for="wpm">Keyer WPM</label>
@@ -164,13 +224,32 @@ onUnmounted(() => {
         </div>
       </div>
     </section>
+    </div><!-- pref-col right -->
+
+    </div><!-- pref-grid -->
   </div>
 </template>
 
 <style scoped>
 .preferences-container {
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 40px;
+}
+
+.pref-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 48px;
   max-width: 600px;
+}
+
+@media (min-width: 900px) {
+  .pref-grid {
+    grid-template-columns: 1fr 1fr;
+    max-width: none;
+  }
 }
 
 h1 {

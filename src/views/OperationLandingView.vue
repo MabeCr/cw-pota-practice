@@ -8,6 +8,12 @@ const router = useRouter()
 const activationStore = useActivationStore()
 const showDialog = ref(false)
 
+// If an activation is already in progress, go straight back to it
+const active = activationStore.inProgress[0]
+if (active) {
+    void router.replace(`/operation/${active.id}`)
+}
+
 function onStart(parkReference: string, parkName: string, callsign: string) {
     const id = activationStore.createActivation(parkReference, parkName, callsign)
     showDialog.value = false

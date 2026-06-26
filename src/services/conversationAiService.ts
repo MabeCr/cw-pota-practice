@@ -1,19 +1,45 @@
-import { ref, watch } from "vue";
+import { ref, watch, effectScope } from "vue";
+
+const _scope = effectScope(true); // detached — not owned by any component
 import { useChatStore } from "@/stores/chatStore";
 import type { Message } from "@/types/message";
 import type { Station } from "@/types/station";
 import { useQsoUtils } from "@/composables/useQsoUtils";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useActivationStore } from "@/stores/activationStore";
 import { US_STATES } from "@/constants/states";
 
-const HUNTER_COUNT = 3;
 
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
     private inQsoWithCallsign: string | null = null;
     private hunterLastMessage = new Map<string, string>();
+    private lastActivationId: string | null = null;
+    private lastProcessedLength = 0;
 
     constructor() {
-        this.setupWatcher();
+        _scope.run(() => { this.setupWatcher(); });
+    }
+
+    prepareForActivation(activationId: string, historyLength: number): void {
+        const isSameActivation = this.lastActivationId === activationId;
+
+        this.lastActivationId = activationId;
+        this.inQsoWithCallsign = null;
+        this.hunterLastMessage.clear();
+        this.lastProcessedLength = historyLength;
+
+        if (!isSameActivation) {
+            this.activeStationList.value = [];
+        }
+
+        // Restore from store when no hunters are in memory (page refresh, new session,
+        // or switching back to a different activation that had active hunters)
+        if (this.activeStationList.value.length === 0) {
+            const activation = useActivationStore().getById(activationId);
+            const saved = activation?.activeHunters ?? [];
+            this.activeStationList.value = [...saved];
+        }
     }
 
     getActiveStations(): Station[] {
@@ -34,12 +60,23 @@ export class ConversationAiService {
         const chatStore = useChatStore();
         watch(() => chatStore.messages, async () => {
             const messages = chatStore.messages;
-            if (messages.length === 0) return;
+            if (messages.length === 0) { this.lastProcessedLength = 0; return; }
+
+            // Guard: skip history being loaded back in on navigation
+            if (messages.length <= this.lastProcessedLength) return;
+            this.lastProcessedLength = messages.length;
 
             const lastMessage = messages[messages.length - 1];
             if (!lastMessage || lastMessage.originator !== 'You') return;
 
             await this.handleUserMessage(lastMessage);
+        }, { deep: true });
+
+        // Persist hunter state whenever the list or any hunter's qsoStep changes
+        watch(this.activeStationList, () => {
+            if (this.lastActivationId) {
+                useActivationStore().saveHunters(this.lastActivationId, this.activeStationList.value);
+            }
         }, { deep: true });
     }
 
@@ -76,8 +113,8 @@ export class ConversationAiService {
     private async handleCQ(): Promise<void> {
         this.inQsoWithCallsign = null;
 
-        // Top up to HUNTER_COUNT — existing hunters persist until they complete a QSO
-        const needed = HUNTER_COUNT - this.activeStationList.value.length;
+        // Top up to hunterCount — existing hunters persist until they complete a QSO
+        const needed = useSettingsStore().hunterCount - this.activeStationList.value.length;
         for (let i = 0; i < needed; i++) {
             this.activeStationList.value.push(this.createHunter());
         }
@@ -249,7 +286,9 @@ export class ConversationAiService {
     private createHunter(callsign?: string): Station {
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
         const frequency = Math.floor(Math.random() * 401) + 400;
-        const wpm = Math.floor(Math.random() * 6) + 15;
+        const maxWpm = useSettingsStore().hunterMaxWpm;
+        const minWpm = Math.max(5, maxWpm - 5);
+        const wpm = Math.floor(Math.random() * (maxWpm - minWpm + 1)) + minWpm;
         const park2parkID = Math.random() < 0.08
             ? `K-${Math.floor(Math.random() * 9999) + 1}`
             : null;
@@ -262,4 +301,10 @@ export class ConversationAiService {
             wpm,
         };
     }
+}
+
+let _instance: ConversationAiService | null = null;
+export function getConversationAiService(): ConversationAiService {
+    if (!_instance) _instance = new ConversationAiService();
+    return _instance;
 }
