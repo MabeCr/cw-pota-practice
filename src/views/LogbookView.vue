@@ -128,12 +128,12 @@ function deleteActivation(id: string, parkName: string) {
         <table class="logbook-table" v-if="activations.length">
           <thead>
             <tr>
-              <th>Park</th>
-              <th>Callsign</th>
-              <th>Date</th>
+              <th title="The POTA park reference number">Park</th>
+              <th title="The callsign that operated the station for the activation">Callsign</th>
+              <th title="The date the activation was started">Date</th>
               <th class="center" title="Unique contacts (/ total if duplicates exist)">QSOs</th>
-              <th class="center">Activated</th>
-              <th>Status</th>
+              <th class="center" title="An indicator showing whether the park was activated">Activated</th>
+              <th title="The status of the activation">Status</th>
               <th></th>
             </tr>
           </thead>
