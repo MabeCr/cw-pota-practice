@@ -6,6 +6,7 @@ import type { Message } from "@/types/message";
 import type { Station } from "@/types/station";
 import { useQsoUtils } from "@/composables/useQsoUtils";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useActivationStore } from "@/stores/activationStore";
 import { US_STATES } from "@/constants/states";
 
 
@@ -20,18 +21,25 @@ export class ConversationAiService {
         _scope.run(() => { this.setupWatcher(); });
     }
 
-    // Call this synchronously in OperationView setup, right after loadMessages.
-    // Resets hunter state when switching to a different activation; preserves it
-    // when returning to the same one. Sets lastProcessedLength so the watcher
-    // ignores the just-loaded history.
     prepareForActivation(activationId: string, historyLength: number): void {
-        if (this.lastActivationId !== activationId) {
-            this.activeStationList.value = [];
-            this.inQsoWithCallsign = null;
-            this.hunterLastMessage.clear();
-            this.lastActivationId = activationId;
-        }
+        const isSameActivation = this.lastActivationId === activationId;
+
+        this.lastActivationId = activationId;
+        this.inQsoWithCallsign = null;
+        this.hunterLastMessage.clear();
         this.lastProcessedLength = historyLength;
+
+        if (!isSameActivation) {
+            this.activeStationList.value = [];
+        }
+
+        // Restore from store when no hunters are in memory (page refresh, new session,
+        // or switching back to a different activation that had active hunters)
+        if (this.activeStationList.value.length === 0) {
+            const activation = useActivationStore().getById(activationId);
+            const saved = activation?.activeHunters ?? [];
+            this.activeStationList.value = [...saved];
+        }
     }
 
     getActiveStations(): Station[] {
@@ -62,6 +70,13 @@ export class ConversationAiService {
             if (!lastMessage || lastMessage.originator !== 'You') return;
 
             await this.handleUserMessage(lastMessage);
+        }, { deep: true });
+
+        // Persist hunter state whenever the list or any hunter's qsoStep changes
+        watch(this.activeStationList, () => {
+            if (this.lastActivationId) {
+                useActivationStore().saveHunters(this.lastActivationId, this.activeStationList.value);
+            }
         }, { deep: true });
     }
 

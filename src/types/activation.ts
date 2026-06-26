@@ -1,3 +1,5 @@
+import type { Station } from './station'
+
 export interface QSO {
   date: string
   theirCall: string
@@ -21,4 +23,5 @@ export interface Activation {
   endedAt: string | null
   qsoList: QSO[]
   chatHistory: ChatMessage[]
+  activeHunters?: Station[]
 }

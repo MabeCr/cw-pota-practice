@@ -14,7 +14,7 @@ const { playMorse, volume, isMuted, setVolume, toggleMute } = useMorse();
 const stationAudioCache = new Map<string, { frequency: number; wpm: number }>();
 
 const message = ref('');
-const activeHuntersCount = ref(0);
+const activeHuntersCount = ref(conversationAiService.getActiveStations().length);
 
 function onKeyerCharacter(char: string): void {
     message.value += char;

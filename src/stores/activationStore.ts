@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Activation, QSO, ChatMessage } from '../types/activation'
+import type { Station } from '../types/station'
 
 const STORAGE_KEY = 'cw-pota-activations'
 
@@ -56,6 +57,13 @@ export const useActivationStore = defineStore('activations', {
             const a = this.activations.find(x => x.id === id)
             if (!a) return
             a.chatHistory = [...history]
+            save(this.activations)
+        },
+
+        saveHunters(id: string, hunters: Station[]): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a) return
+            a.activeHunters = [...hunters]
             save(this.activations)
         },
 
