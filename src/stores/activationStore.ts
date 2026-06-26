@@ -68,6 +68,20 @@ export const useActivationStore = defineStore('activations', {
             save(this.activations)
         },
 
+        updateQso(id: string, index: number, qso: QSO): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a || index < 0 || index >= a.qsoList.length) return
+            a.qsoList[index] = { ...qso }
+            save(this.activations)
+        },
+
+        deleteQso(id: string, index: number): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a || index < 0 || index >= a.qsoList.length) return
+            a.qsoList.splice(index, 1)
+            save(this.activations)
+        },
+
         endActivation(id: string): void {
             const a = this.activations.find(x => x.id === id)
             if (!a) return

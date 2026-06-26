@@ -38,6 +38,14 @@ function onAddQso(qso: QSO) {
     activationStore.addQso(activationId, qso)
 }
 
+function onUpdateQso(index: number, qso: QSO) {
+    activationStore.updateQso(activationId, index, qso)
+}
+
+function onDeleteQso(index: number) {
+    activationStore.deleteQso(activationId, index)
+}
+
 function toggleActivation() {
     if (!activation.value) return
     if (activation.value.endedAt) {
@@ -86,6 +94,8 @@ function formatDate(iso: string): string {
           :qso-list="activation.qsoList"
           :readonly="!!activation.endedAt"
           @add-qso="onAddQso"
+          @update-qso="onUpdateQso"
+          @delete-qso="onDeleteQso"
         />
       </div>
       <div class="right-half">
