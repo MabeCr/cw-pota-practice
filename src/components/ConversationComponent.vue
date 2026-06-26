@@ -5,6 +5,8 @@ import { getConversationAiService } from '@/services/conversationAiService';
 import { useMorse, suspendAudio, startBackgroundNoise } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
 
+const props = defineProps<{ readonly?: boolean }>()
+
 const chatStore = useChatStore();
 const conversationAiService = getConversationAiService();
 const { playMorse, volume, isMuted, setVolume, toggleMute } = useMorse();
@@ -78,6 +80,7 @@ watch(
 const chatContainer = useTemplateRef('chatContainer');
 
 function sendMessage() {
+  if (props.readonly) return;
   if (message.value.trim()) {
     chatStore.addMessage('You', message.value.trim());
     message.value = '';
@@ -133,10 +136,10 @@ watch(
     <div class="qso-status-header">
       <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
     </div>
-    <div class="input-container">
-      <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()"></textarea>
+    <div class="input-container" :class="{ 'input-container--disabled': readonly }">
+      <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()" :disabled="readonly"></textarea>
       <div class="send-button-container">
-        <button class="send-button" @click="sendMessage()">Send</button>
+        <button class="send-button" @click="sendMessage()" :disabled="readonly">Send</button>
       </div>
     </div>
 
@@ -245,7 +248,12 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%
+  width: 100%;
+}
+
+.input-container--disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .send-button-container {

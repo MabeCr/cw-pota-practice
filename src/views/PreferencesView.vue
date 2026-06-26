@@ -32,6 +32,9 @@ onUnmounted(() => {
   <div class="preferences-container">
     <h1>Preferences</h1>
 
+    <div class="pref-grid">
+
+    <div class="pref-col">
     <section class="pref-section">
       <h2>Station</h2>
 
@@ -105,7 +108,9 @@ onUnmounted(() => {
         </div>
       </div>
     </section>
+    </div><!-- pref-col left -->
 
+    <div class="pref-col">
     <section class="pref-section">
       <h2>Keyer Settings</h2>
 
@@ -219,13 +224,32 @@ onUnmounted(() => {
         </div>
       </div>
     </section>
+    </div><!-- pref-col right -->
+
+    </div><!-- pref-grid -->
   </div>
 </template>
 
 <style scoped>
 .preferences-container {
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 40px;
+}
+
+.pref-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 48px;
   max-width: 600px;
+}
+
+@media (min-width: 900px) {
+  .pref-grid {
+    grid-template-columns: 1fr 1fr;
+    max-width: none;
+  }
 }
 
 h1 {
