@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LogComponent from '@/components/LogComponent.vue'
 import ConversationComponent from '@/components/ConversationComponent.vue'
+import EditActivationDialog from '@/components/EditActivationDialog.vue'
 import { useActivationStore } from '@/stores/activationStore'
 import { useChatStore } from '@/stores/chatStore'
 import { getConversationAiService } from '@/services/conversationAiService'
@@ -38,6 +39,14 @@ function onAddQso(qso: QSO) {
     activationStore.addQso(activationId, qso)
 }
 
+function onUpdateQso(index: number, qso: QSO) {
+    activationStore.updateQso(activationId, index, qso)
+}
+
+function onDeleteQso(index: number) {
+    activationStore.deleteQso(activationId, index)
+}
+
 function toggleActivation() {
     if (!activation.value) return
     if (activation.value.endedAt) {
@@ -45,6 +54,13 @@ function toggleActivation() {
     } else {
         activationStore.endActivation(activationId)
     }
+}
+
+const editDialogOpen = ref(false)
+
+function onSaveEdit(fields: { parkReference: string; parkName: string; parkState: string; callsign: string }) {
+    activationStore.updateActivation(activationId, fields)
+    editDialogOpen.value = false
 }
 
 function formatDate(iso: string): string {
@@ -66,6 +82,7 @@ function formatDate(iso: string): string {
         <span class="bar-sep">·</span>
         <span class="bar-date">{{ formatDate(activation.startedAt) }}</span>
         <span v-if="activation.endedAt" class="badge-ended">Ended</span>
+        <button class="edit-btn" @click="editDialogOpen = true" title="Edit activation info">✎</button>
       </div>
       <button
         class="toggle-btn"
@@ -86,6 +103,8 @@ function formatDate(iso: string): string {
           :qso-list="activation.qsoList"
           :readonly="!!activation.endedAt"
           @add-qso="onAddQso"
+          @update-qso="onUpdateQso"
+          @delete-qso="onDeleteQso"
         />
       </div>
       <div class="right-half">
@@ -94,6 +113,13 @@ function formatDate(iso: string): string {
     </div>
 
   </div>
+
+  <EditActivationDialog
+    v-if="editDialogOpen && activation"
+    :activation="activation"
+    @save="onSaveEdit"
+    @cancel="editDialogOpen = false"
+  />
 </template>
 
 <style scoped>
@@ -156,6 +182,24 @@ function formatDate(iso: string): string {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.edit-btn {
+  padding: 2px 7px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #aaa;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.edit-btn:hover {
+  background: #eff6ff;
+  color: #3771d4;
+  border-color: #93c5fd;
 }
 
 .ended-banner {

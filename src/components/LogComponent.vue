@@ -4,7 +4,11 @@ import { useQsoUtils } from '../composables/useQsoUtils'
 import type { QSO } from '../types/activation'
 
 const props = defineProps<{ qsoList: QSO[]; readonly?: boolean }>()
-const emit  = defineEmits<{ 'add-qso': [qso: QSO] }>()
+const emit  = defineEmits<{
+  'add-qso':    [qso: QSO]
+  'update-qso': [index: number, qso: QSO]
+  'delete-qso': [index: number]
+}>()
 
 const tableContainer   = useTemplateRef<HTMLDivElement>('tableContainer')
 const theirCallInput   = useTemplateRef<HTMLInputElement>('theirCallInput')
@@ -16,50 +20,95 @@ const theirParkInput   = useTemplateRef<HTMLInputElement>('theirParkInput')
 const uniqueContactCount = computed(() => new Set(props.qsoList.map(q => q.theirCall)).size)
 const isActivated = computed(() => uniqueContactCount.value >= 10)
 
-const isP2P = ref(false)
-const newQSO = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
+const isP2P        = ref(false)
+const editingIndex = ref<number | null>(null)
+const isEditing    = computed(() => editingIndex.value !== null)
+const newQSO       = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
 
 const theirCallError   = computed(() => newQSO.value.theirCall.length   > 0 && !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase()))
 const sentRstError     = computed(() => newQSO.value.sentRST.length     > 0 && !useQsoUtils().validateRST(newQSO.value.sentRST))
 const receivedRstError = computed(() => newQSO.value.receivedRST.length > 0 && !useQsoUtils().validateRST(newQSO.value.receivedRST))
-const stateError = computed(() => newQSO.value.theirState.length > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
+const stateError       = computed(() => newQSO.value.theirState.length  > 0 && !useQsoUtils().validateState(newQSO.value.theirState))
 
 function toggleP2P() {
   isP2P.value = !isP2P.value
   if (!isP2P.value) newQSO.value.theirPark = ''
 }
 
-function onStateEnter() {
-  if (isP2P.value) theirParkInput.value?.focus()
-  else addQSO()
+// Shared validation — returns a clean QSO or null
+function buildQso(): QSO | null {
+  const call        = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
+  const sentRST     = newQSO.value.sentRST.replace(/\s+/g, '')
+  const receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
+  const state       = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
+  const park        = isP2P.value ? (newQSO.value.theirPark ?? '').toUpperCase().replace(/\s+/g, '') : ''
+
+  if (!useQsoUtils().validateCall(call))    return null
+  if (!useQsoUtils().validateRST(sentRST))  return null
+  if (!useQsoUtils().validateRST(receivedRST)) return null
+  if (!useQsoUtils().validateState(state))  return null
+  if (isP2P.value && !park)                return null
+
+  return { date: newQSO.value.date || '', theirCall: call, sentRST, receivedRST, theirState: state, theirPark: park || '' }
+}
+
+function resetForm() {
+  newQSO.value = { date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' }
+  isP2P.value = false
+  editingIndex.value = null
 }
 
 function addQSO() {
-  newQSO.value.theirCall   = newQSO.value.theirCall.toUpperCase().replace(/\s+/g, '')
-  newQSO.value.sentRST     = newQSO.value.sentRST.replace(/\s+/g, '')
-  newQSO.value.receivedRST = newQSO.value.receivedRST.replace(/\s+/g, '')
-  newQSO.value.date        = new Date().toLocaleTimeString('en-US', {
+  if (props.readonly) return
+  const qso = buildQso()
+  if (!qso) return
+  qso.date = new Date().toLocaleTimeString('en-US', {
     timeZone: 'UTC', hour12: false, hour: '2-digit', minute: '2-digit',
   }) + 'z'
-
-  if (!useQsoUtils().validateCall(newQSO.value.theirCall))  return
-  if (!useQsoUtils().validateRST(newQSO.value.sentRST))     return
-  if (!useQsoUtils().validateRST(newQSO.value.receivedRST)) return
-
-  newQSO.value.theirState = newQSO.value.theirState.toUpperCase().replace(/\s+/g, '')
-  if (!useQsoUtils().validateState(newQSO.value.theirState)) return
-
-  if (isP2P.value) {
-    newQSO.value.theirPark = (newQSO.value.theirPark ?? '').toUpperCase().replace(/\s+/g, '')
-    if (!newQSO.value.theirPark) return
-  } else {
-    newQSO.value.theirPark = ''
-  }
-
-  emit('add-qso', { ...newQSO.value })
-  newQSO.value = { date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' }
-  isP2P.value = false
+  emit('add-qso', qso)
+  resetForm()
   theirCallInput.value?.focus()
+}
+
+function startEdit(index: number) {
+  if (props.readonly) return
+  editingIndex.value = index
+  const qso = props.qsoList[index]!
+  newQSO.value = { ...qso }
+  isP2P.value = !!qso.theirPark
+  nextTick(() => theirCallInput.value?.focus())
+}
+
+function saveEdit() {
+  if (editingIndex.value === null) return
+  const qso = buildQso()
+  if (!qso) return
+  qso.date = newQSO.value.date
+  emit('update-qso', editingIndex.value, qso)
+  resetForm()
+}
+
+function cancelEdit() {
+  resetForm()
+}
+
+function deleteQso(index: number) {
+  if (props.readonly) return
+  if (!confirm('Remove this contact from the log?')) return
+  if (editingIndex.value === index) resetForm()
+  else if (editingIndex.value !== null && editingIndex.value > index) editingIndex.value--
+  emit('delete-qso', index)
+}
+
+// Enter key handlers — submit goes to the right action depending on mode
+function submitForm() {
+  if (isEditing.value) saveEdit()
+  else addQSO()
+}
+
+function onStateEnter() {
+  if (isP2P.value) theirParkInput.value?.focus()
+  else submitForm()
 }
 
 function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', next: HTMLInputElement | null) {
@@ -69,7 +118,7 @@ function onRstKeydown(event: KeyboardEvent, field: 'sentRST' | 'receivedRST', ne
     newQSO.value[field] = '599'
     next?.focus()
   } else {
-    addQSO()
+    submitForm()
   }
 }
 
@@ -99,10 +148,16 @@ watch(() => props.qsoList.length, async () => {
             <th>Sent</th>
             <th>Rcvd</th>
             <th>Location</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(qso, index) in qsoList" :key="index">
+          <tr
+            v-for="(qso, index) in qsoList"
+            :key="index"
+            :class="{ 'row-editing': editingIndex === index, 'row-clickable': !readonly }"
+            @click="startEdit(index)"
+          >
             <td class="mono">{{ qso.date }}</td>
             <td class="mono">{{ qso.theirCall }}</td>
             <td class="mono">{{ qso.sentRST }}</td>
@@ -110,9 +165,17 @@ watch(() => props.qsoList.length, async () => {
             <td class="mono exch-cell">
               {{ qso.theirState }}<template v-if="qso.theirPark"><span class="exch-sep">·</span>{{ qso.theirPark }}<span class="p2p-badge">P2P</span></template>
             </td>
+            <td class="action-cell">
+              <button
+                v-if="!readonly"
+                class="delete-row-btn"
+                @click.stop="deleteQso(index)"
+                title="Delete contact"
+              >✕</button>
+            </td>
           </tr>
           <tr v-if="qsoList.length === 0" class="empty-row">
-            <td colspan="5">No contacts logged yet.</td>
+            <td colspan="6">No contacts logged yet.</td>
           </tr>
         </tbody>
       </table>
@@ -192,14 +255,18 @@ watch(() => props.qsoList.length, async () => {
           placeholder="K1995"
           autocomplete="off" spellcheck="false"
           @input="newQSO.theirPark = (newQSO.theirPark ?? '').toUpperCase()"
-          @keydown.enter="addQSO"
+          @keydown.enter="submitForm"
           :disabled="readonly"
         />
       </div>
 
       <div class="input-field input-field--btn">
         <label>&nbsp;</label>
-        <button class="add-button" @click="addQSO" :disabled="readonly">Log</button>
+        <div v-if="isEditing" class="edit-actions">
+          <button class="cancel-button" @click="cancelEdit">Cancel</button>
+          <button class="update-button" @click="saveEdit">Update</button>
+        </div>
+        <button v-else class="add-button" @click="addQSO" :disabled="readonly">Log</button>
       </div>
     </div>
 
@@ -295,8 +362,49 @@ watch(() => props.qsoList.length, async () => {
   background: #f0f0f3;
 }
 
-.qso-table tbody tr:hover td {
+.row-clickable {
+  cursor: pointer;
+}
+
+.row-clickable:hover td {
   background: #e8e8ed;
+}
+
+.row-editing td {
+  background: #eff6ff !important;
+}
+
+.row-editing td:first-child {
+  box-shadow: inset 3px 0 0 #3771d4;
+}
+
+.action-cell {
+  width: 32px;
+  padding: 4px 8px;
+  text-align: right;
+}
+
+.delete-row-btn {
+  visibility: hidden;
+  padding: 2px 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: #bbb;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  line-height: 1;
+}
+
+tr:hover .delete-row-btn {
+  visibility: visible;
+}
+
+.delete-row-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
 }
 
 .mono {
@@ -318,6 +426,11 @@ watch(() => props.qsoList.length, async () => {
   flex-shrink: 0;
 }
 
+.input-row--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .input-field {
   display: flex;
   flex-direction: column;
@@ -325,21 +438,10 @@ watch(() => props.qsoList.length, async () => {
   flex: 2;
 }
 
-.input-field--narrow {
-  flex: 1;
-}
-
-.input-field--fixed {
-  flex: 0 0 72px;
-}
-
-.input-field--p2p {
-  flex: 0 0 auto;
-}
-
-.input-field--btn {
-  flex: 0 0 auto;
-}
+.input-field--narrow { flex: 1; }
+.input-field--fixed  { flex: 0 0 72px; }
+.input-field--p2p    { flex: 0 0 auto; }
+.input-field--btn    { flex: 0 0 auto; }
 
 .input-field label {
   font-size: 0.72rem;
@@ -373,14 +475,14 @@ watch(() => props.qsoList.length, async () => {
   box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.15);
 }
 
-.input-row--disabled {
-  opacity: 0.5;
-  pointer-events: none;
+.edit-actions {
+  display: flex;
+  gap: 6px;
 }
 
-.add-button {
+.add-button,
+.update-button {
   padding: 7px 18px;
-  background: #3771d4;
   color: #fff;
   border: none;
   border-radius: 5px;
@@ -391,9 +493,25 @@ watch(() => props.qsoList.length, async () => {
   white-space: nowrap;
 }
 
-.add-button:hover {
-  background: #2b5aab;
+.add-button    { background: #3771d4; }
+.add-button:hover:not(:disabled) { background: #2b5aab; }
+
+.update-button { background: #16a34a; }
+.update-button:hover { background: #15803d; }
+
+.cancel-button {
+  padding: 7px 12px;
+  background: none;
+  border: 1px solid #c0c0c0;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
 }
+
+.cancel-button:hover { background: #f5f5f5; }
 
 .p2p-toggle {
   width: 100%;
@@ -420,9 +538,7 @@ watch(() => props.qsoList.length, async () => {
   color: #777;
 }
 
-.exch-cell {
-  white-space: nowrap;
-}
+.exch-cell { white-space: nowrap; }
 
 .exch-sep {
   margin: 0 5px;

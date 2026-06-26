@@ -18,6 +18,7 @@ export interface Activation {
   id: string
   parkReference: string
   parkName: string
+  parkState?: string
   callsign: string
   startedAt: string
   endedAt: string | null

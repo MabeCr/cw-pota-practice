@@ -30,12 +30,13 @@ export const useActivationStore = defineStore('activations', {
             state.activations.filter(a => a.endedAt !== null),
     },
     actions: {
-        createActivation(parkReference: string, parkName: string, callsign: string): string {
+        createActivation(parkReference: string, parkName: string, callsign: string, parkState?: string): string {
             const id = crypto.randomUUID()
             this.activations.push({
                 id,
                 parkReference,
                 parkName,
+                parkState,
                 callsign,
                 startedAt: new Date().toISOString(),
                 endedAt: null,
@@ -67,6 +68,20 @@ export const useActivationStore = defineStore('activations', {
             save(this.activations)
         },
 
+        updateQso(id: string, index: number, qso: QSO): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a || index < 0 || index >= a.qsoList.length) return
+            a.qsoList[index] = { ...qso }
+            save(this.activations)
+        },
+
+        deleteQso(id: string, index: number): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a || index < 0 || index >= a.qsoList.length) return
+            a.qsoList.splice(index, 1)
+            save(this.activations)
+        },
+
         endActivation(id: string): void {
             const a = this.activations.find(x => x.id === id)
             if (!a) return
@@ -78,6 +93,16 @@ export const useActivationStore = defineStore('activations', {
             const a = this.activations.find(x => x.id === id)
             if (!a) return
             a.endedAt = null
+            save(this.activations)
+        },
+
+        updateActivation(id: string, fields: { parkReference?: string; parkName?: string; parkState?: string; callsign?: string }): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a) return
+            if (fields.parkReference !== undefined) a.parkReference = fields.parkReference
+            if (fields.parkName      !== undefined) a.parkName      = fields.parkName
+            if (fields.parkState     !== undefined) a.parkState     = fields.parkState
+            if (fields.callsign      !== undefined) a.callsign      = fields.callsign
             save(this.activations)
         },
 
