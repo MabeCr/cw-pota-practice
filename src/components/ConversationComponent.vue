@@ -40,6 +40,12 @@ function getHunterColor(originator: string): string {
 // Revealed text for each hunter message, keyed by message index
 const displayedText = reactive<Record<number, string>>({});
 
+// Pre-fill history that was already in the store when this component mounted —
+// those messages have already been seen so they should appear instantly.
+chatStore.messages.forEach((msg, index) => {
+  if (msg.originator !== 'You') displayedText[index] = msg.message;
+});
+
 function animateMessage(index: number, fullText: string): void {
   displayedText[index] = '';
   let charIndex = 0;
