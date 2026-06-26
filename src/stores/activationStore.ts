@@ -96,6 +96,16 @@ export const useActivationStore = defineStore('activations', {
             save(this.activations)
         },
 
+        updateActivation(id: string, fields: { parkReference?: string; parkName?: string; parkState?: string; callsign?: string }): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a) return
+            if (fields.parkReference !== undefined) a.parkReference = fields.parkReference
+            if (fields.parkName      !== undefined) a.parkName      = fields.parkName
+            if (fields.parkState     !== undefined) a.parkState     = fields.parkState
+            if (fields.callsign      !== undefined) a.callsign      = fields.callsign
+            save(this.activations)
+        },
+
         deleteActivation(id: string): void {
             this.activations = this.activations.filter(x => x.id !== id)
             save(this.activations)

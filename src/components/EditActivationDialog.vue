@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useSettingsStore } from '@/stores/settingsStore'
+import { ref, computed, watch } from 'vue'
 import {
     isPotaReference,
     lookupParkByReference,
@@ -8,17 +7,18 @@ import {
     type PotaPark,
 } from '@/composables/usePotaApi'
 import { US_STATES } from '@/constants/states'
+import type { Activation } from '@/types/activation'
+
+const props = defineProps<{ activation: Activation }>()
 
 const emit = defineEmits<{
-    start: [parkReference: string, parkName: string, callsign: string, parkState: string]
+    save: [fields: { parkReference: string; parkName: string; parkState: string; callsign: string }]
     cancel: []
 }>()
 
-const settings = useSettingsStore()
-
 const parkQuery    = ref('')
 const parkState    = ref('')
-const callsign     = ref(settings.callsign)
+const callsign     = ref('')
 const results      = ref<PotaPark[]>([])
 const selectedPark = ref<PotaPark | null>(null)
 const searching    = ref(false)
@@ -29,8 +29,18 @@ function locationToStateCode(locationName: string): string {
     return US_STATES.find(s => s.name.toLowerCase() === normalized)?.code ?? ''
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let suppressSearch = false
+
+watch(() => props.activation, (act) => {
+    suppressSearch = true
+    parkQuery.value = act.parkReference ? `${act.parkReference} — ${act.parkName}` : act.parkName
+    parkState.value = act.parkState ?? ''
+    callsign.value  = act.callsign
+    selectedPark.value = null
+    results.value = []
+}, { immediate: true })
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(parkQuery, (val) => {
     if (suppressSearch) { suppressSearch = false; return }
@@ -70,21 +80,23 @@ function selectPark(park: PotaPark) {
     results.value = []
 }
 
-const canStart = computed(() => parkQuery.value.trim().length > 0 && callsign.value.trim().length > 0)
+const canSave = computed(() => parkQuery.value.trim().length > 0 && callsign.value.trim().length > 0)
 
-function handleStart() {
-    if (!canStart.value) return
-    const ref   = selectedPark.value?.reference ?? ''
-    const name  = selectedPark.value?.name       ?? parkQuery.value.trim()
-    const state = parkState.value.trim().toUpperCase().slice(0, 2)
-    emit('start', ref, name, callsign.value.trim().toUpperCase(), state)
+function handleSave() {
+    if (!canSave.value) return
+    emit('save', {
+        parkReference: selectedPark.value?.reference ?? '',
+        parkName:      selectedPark.value?.name ?? parkQuery.value.trim(),
+        parkState:     parkState.value.trim().toUpperCase().slice(0, 2),
+        callsign:      callsign.value.trim().toUpperCase(),
+    })
 }
 </script>
 
 <template>
-  <div class="overlay" @click.self="emit('cancel')">
+  <div class="overlay">
     <div class="dialog">
-      <h2 class="dialog-title">New Activation</h2>
+      <h2 class="dialog-title">Edit Activation</h2>
 
       <div class="field">
         <label class="field-label">Park Reference or Name</label>
@@ -147,8 +159,8 @@ function handleStart() {
 
       <div class="dialog-actions">
         <button class="btn-cancel" @click="emit('cancel')">Cancel</button>
-        <button class="btn-start" :disabled="!canStart" @click="handleStart">
-          Start Activation
+        <button class="btn-save" :disabled="!canSave" @click="handleSave">
+          Save Changes
         </button>
       </div>
     </div>
@@ -198,6 +210,14 @@ function handleStart() {
   margin-bottom: 6px;
 }
 
+.field-optional {
+  font-weight: 400;
+  color: #aaa;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.7rem;
+}
+
 .search-wrapper {
   position: relative;
 }
@@ -222,15 +242,7 @@ function handleStart() {
 }
 
 .field-input--narrow {
-  width: 80px;
-}
-
-.field-optional {
-  font-weight: 400;
-  color: #aaa;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.7rem;
+  width: 120px;
 }
 
 .results-list {
@@ -310,7 +322,7 @@ function handleStart() {
   background: #f5f5f5;
 }
 
-.btn-start {
+.btn-save {
   padding: 8px 22px;
   background: #3771d4;
   color: #fff;
@@ -322,11 +334,11 @@ function handleStart() {
   transition: background 0.15s;
 }
 
-.btn-start:hover:not(:disabled) {
+.btn-save:hover:not(:disabled) {
   background: #2b5aab;
 }
 
-.btn-start:disabled {
+.btn-save:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

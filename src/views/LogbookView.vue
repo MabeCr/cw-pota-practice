@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useActivationStore } from '@/stores/activationStore'
 import { US_STATES } from '@/constants/states'
 import type { Activation, QSO } from '@/types/activation'
+import EditActivationDialog from '@/components/EditActivationDialog.vue'
 
 const router = useRouter()
 const activationStore = useActivationStore()
@@ -78,6 +79,25 @@ const maxContactCount = computed(() =>
   Math.max(1, ...contactsByState.value.values())
 )
 
+const hoveredActivation = computed(() =>
+  hoveredActivationId.value
+    ? (activations.value.find(a => a.id === hoveredActivationId.value) ?? null)
+    : null
+)
+
+const hoveredParkState = computed(() =>
+  hoveredActivation.value?.parkState ?? null
+)
+
+const hoveredContactStates = computed(() => {
+  if (!hoveredActivation.value) return new Set<string>()
+  return new Set(
+    hoveredActivation.value.qsoList
+      .map(q => q.theirState?.trim().toUpperCase())
+      .filter((s): s is string => !!s)
+  )
+})
+
 function heatBg(count: number, max: number): string {
   if (count === 0) return '#efefef'
   const t = Math.min(count / max, 1)
@@ -112,6 +132,20 @@ function deleteActivation(id: string, parkName: string) {
     if (!confirm(`Delete the activation for "${parkName}"? This cannot be undone.`)) return
     activationStore.deleteActivation(id)
 }
+
+// ── Edit activation ───────────────────────────────────────────────────────────
+
+const editingActivation = ref<Activation | null>(null)
+
+function openEdit(act: Activation) {
+    editingActivation.value = act
+}
+
+function saveEdit(fields: { parkReference: string; parkName: string; parkState: string; callsign: string }) {
+    if (!editingActivation.value) return
+    activationStore.updateActivation(editingActivation.value.id, fields)
+    editingActivation.value = null
+}
 </script>
 
 <template>
@@ -142,6 +176,8 @@ function deleteActivation(id: string, parkName: string) {
               v-for="act in activations"
               :key="act.id"
               :class="{ 'row-highlighted': act.id === hoveredActivationId }"
+              @mouseenter="hoveredActivationId = act.id"
+              @mouseleave="hoveredActivationId = null"
             >
               <td>
                 <span v-if="act.parkReference" class="park-ref">{{ act.parkReference }}</span>
@@ -166,6 +202,7 @@ function deleteActivation(id: string, parkName: string) {
                 <button :class="act.endedAt ? 'view-btn' : 'resume-btn'" @click="resume(act.id)">
                   {{ act.endedAt ? 'View' : 'Resume' }}
                 </button>
+                <button class="edit-btn" @click.stop="openEdit(act)" title="Edit activation">✎</button>
                 <button class="delete-btn" @click="deleteActivation(act.id, act.parkName)" title="Delete activation">✕</button>
               </td>
             </tr>
@@ -187,6 +224,7 @@ function deleteActivation(id: string, parkName: string) {
               v-for="s in US_STATES"
               :key="s.code"
               class="state-tile"
+              :class="{ 'state-tile--glow': hoveredParkState === s.code }"
               :style="{
                 background: heatBg(activationsByState.get(s.code) ?? 0, maxActivationCount),
                 color: heatFg(activationsByState.get(s.code) ?? 0, maxActivationCount),
@@ -203,6 +241,7 @@ function deleteActivation(id: string, parkName: string) {
               v-for="s in US_STATES"
               :key="s.code"
               class="state-tile"
+              :class="{ 'state-tile--glow': hoveredContactStates.has(s.code) }"
               :style="{
                 background: heatBg(contactsByState.get(s.code) ?? 0, maxContactCount),
                 color: heatFg(contactsByState.get(s.code) ?? 0, maxContactCount),
@@ -268,6 +307,13 @@ function deleteActivation(id: string, parkName: string) {
     </div>
 
   </div>
+
+  <EditActivationDialog
+    v-if="editingActivation"
+    :activation="editingActivation"
+    @save="saveEdit"
+    @cancel="editingActivation = null"
+  />
 </template>
 
 <style scoped>
@@ -440,6 +486,24 @@ function deleteActivation(id: string, parkName: string) {
 .view-btn         { background: #3771d4; color: #fff; }
 .view-btn:hover   { background: #2b5aab; }
 
+.edit-btn {
+  margin-left: 6px;
+  padding: 5px 9px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  color: #aaa;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.edit-btn:hover {
+  background: #eff6ff;
+  color: #3771d4;
+  border-color: #93c5fd;
+}
+
 .delete-btn {
   margin-left: 6px;
   padding: 5px 9px;
@@ -521,6 +585,12 @@ function deleteActivation(id: string, parkName: string) {
 
 .state-tile:hover {
   filter: brightness(0.88);
+}
+
+.state-tile--glow {
+  position: relative;
+  box-shadow: 0 0 0 2px #f59e0b, 0 0 7px 2px rgba(245, 158, 11, 0.55);
+  z-index: 1;
 }
 
 /* ── Callsign lookup ─────────────────────────────── */
