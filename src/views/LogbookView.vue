@@ -131,7 +131,7 @@ function deleteActivation(id: string, parkName: string) {
               <th>Park</th>
               <th>Callsign</th>
               <th>Date</th>
-              <th class="center">QSOs</th>
+              <th class="center" title="Unique contacts (/ total if duplicates exist)">QSOs</th>
               <th class="center">Activated</th>
               <th>Status</th>
               <th></th>
@@ -149,7 +149,9 @@ function deleteActivation(id: string, parkName: string) {
               </td>
               <td class="mono">{{ act.callsign }}</td>
               <td class="mono">{{ formatDate(act.startedAt) }}</td>
-              <td class="mono center">{{ act.qsoList.length }}</td>
+              <td class="mono center">
+                {{ uniqueContacts(act) }}<span v-if="act.qsoList.length !== uniqueContacts(act)" class="qso-total"> / {{ act.qsoList.length }}</span>
+              </td>
               <td class="center">
                 <span class="activated-icon" :class="uniqueContacts(act) >= 10 ? 'icon-yes' : 'icon-no'">
                   {{ uniqueContacts(act) >= 10 ? '✓' : '✗' }}
@@ -218,15 +220,24 @@ function deleteActivation(id: string, parkName: string) {
         <h2 class="panel-title">Callsign Lookup</h2>
       </div>
 
-      <input
-        v-model="lookupQuery"
-        class="lookup-input"
-        type="text"
-        placeholder="Search callsign…"
-        autocomplete="off"
-        spellcheck="false"
-        @input="lookupQuery = lookupQuery.toUpperCase()"
-      />
+      <div class="lookup-input-wrap">
+        <input
+          v-model="lookupQuery"
+          class="lookup-input"
+          type="text"
+          placeholder="Search callsign…"
+          autocomplete="off"
+          spellcheck="false"
+          @input="lookupQuery = lookupQuery.toUpperCase()"
+        />
+        <button
+          v-if="lookupQuery"
+          class="lookup-clear"
+          @click="lookupQuery = ''"
+          tabindex="-1"
+          aria-label="Clear"
+        >✕</button>
+      </div>
 
       <div class="lookup-results">
         <div v-if="lookupQuery && !lookupResults.length" class="lookup-empty">
@@ -402,6 +413,11 @@ function deleteActivation(id: string, parkName: string) {
 .icon-yes       { color: #16a34a; }
 .icon-no        { color: #d1d5db; }
 
+.qso-total {
+  color: #bbb;
+  font-size: 0.8em;
+}
+
 .action-cell {
   text-align: right;
   white-space: nowrap;
@@ -509,17 +525,21 @@ function deleteActivation(id: string, parkName: string) {
 
 /* ── Callsign lookup ─────────────────────────────── */
 
+.lookup-input-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
 .lookup-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 30px 8px 10px;
   border: 1px solid #d4d4d4;
   border-radius: 5px;
   font-size: 0.9rem;
   font-family: monospace;
   letter-spacing: 0.05em;
   box-sizing: border-box;
-  flex-shrink: 0;
-  margin-bottom: 10px;
   background: #fafafa;
 }
 
@@ -528,6 +548,26 @@ function deleteActivation(id: string, parkName: string) {
   border-color: #3771d4;
   background: #fff;
   box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+}
+
+.lookup-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: 0.7rem;
+  color: #bbb;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 3px;
+  transition: color 0.12s;
+}
+
+.lookup-clear:hover {
+  color: #888;
 }
 
 .lookup-results {
