@@ -30,12 +30,13 @@ export const useActivationStore = defineStore('activations', {
             state.activations.filter(a => a.endedAt !== null),
     },
     actions: {
-        createActivation(parkReference: string, parkName: string, callsign: string): string {
+        createActivation(parkReference: string, parkName: string, callsign: string, parkState?: string): string {
             const id = crypto.randomUUID()
             this.activations.push({
                 id,
                 parkReference,
                 parkName,
+                parkState,
                 callsign,
                 startedAt: new Date().toISOString(),
                 endedAt: null,

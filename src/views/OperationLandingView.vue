@@ -14,8 +14,8 @@ if (active) {
     void router.replace(`/operation/${active.id}`)
 }
 
-function onStart(parkReference: string, parkName: string, callsign: string) {
-    const id = activationStore.createActivation(parkReference, parkName, callsign)
+function onStart(parkReference: string, parkName: string, callsign: string, parkState: string) {
+    const id = activationStore.createActivation(parkReference, parkName, callsign, parkState)
     showDialog.value = false
     void router.push(`/operation/${id}`)
 }

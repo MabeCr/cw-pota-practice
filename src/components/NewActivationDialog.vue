@@ -7,20 +7,27 @@ import {
     searchParksByName,
     type PotaPark,
 } from '@/composables/usePotaApi'
+import { US_STATES } from '@/constants/states'
 
 const emit = defineEmits<{
-    start: [parkReference: string, parkName: string, callsign: string]
+    start: [parkReference: string, parkName: string, callsign: string, parkState: string]
     cancel: []
 }>()
 
 const settings = useSettingsStore()
 
 const parkQuery    = ref('')
+const parkState    = ref('')
 const callsign     = ref(settings.callsign)
 const results      = ref<PotaPark[]>([])
 const selectedPark = ref<PotaPark | null>(null)
 const searching    = ref(false)
 const apiAvailable = ref(true)
+
+function locationToStateCode(locationName: string): string {
+    const normalized = locationName.trim().toLowerCase()
+    return US_STATES.find(s => s.name.toLowerCase() === normalized)?.code ?? ''
+}
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -56,6 +63,7 @@ async function runSearch(query: string) {
 function selectPark(park: PotaPark) {
     selectedPark.value = park
     parkQuery.value = `${park.reference} — ${park.name}`
+    parkState.value = locationToStateCode(park.locationName)
     results.value = []
 }
 
@@ -63,9 +71,10 @@ const canStart = computed(() => parkQuery.value.trim().length > 0 && callsign.va
 
 function handleStart() {
     if (!canStart.value) return
-    const ref  = selectedPark.value?.reference ?? ''
-    const name = selectedPark.value?.name       ?? parkQuery.value.trim()
-    emit('start', ref, name, callsign.value.trim().toUpperCase())
+    const ref   = selectedPark.value?.reference ?? ''
+    const name  = selectedPark.value?.name       ?? parkQuery.value.trim()
+    const state = parkState.value.trim().toUpperCase().slice(0, 2)
+    emit('start', ref, name, callsign.value.trim().toUpperCase(), state)
 }
 </script>
 
@@ -116,6 +125,20 @@ function handleStart() {
           autocomplete="off"
           spellcheck="false"
           @input="callsign = callsign.toUpperCase()"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Park State <span class="field-optional">(2-letter code)</span></label>
+        <input
+          v-model="parkState"
+          class="field-input field-input--narrow"
+          type="text"
+          placeholder="OH"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="2"
+          @input="parkState = parkState.toUpperCase()"
         />
       </div>
 
@@ -193,6 +216,18 @@ function handleStart() {
   border-color: #3771d4;
   background: #fff;
   box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+}
+
+.field-input--narrow {
+  width: 80px;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: #aaa;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.7rem;
 }
 
 .results-list {
