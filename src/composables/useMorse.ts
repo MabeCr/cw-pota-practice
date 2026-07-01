@@ -53,8 +53,11 @@ function startNoise(ctx: AudioContext, target: AudioNode): void {
     noiseSource.start();
 }
 
-const volume = ref(0.8);   // 0–1
-const isMuted = ref(false);
+const VOLUME_KEY = 'cw-pota-volume';
+const MUTED_KEY  = 'cw-pota-muted';
+
+const volume  = ref(parseFloat(localStorage.getItem(VOLUME_KEY) ?? '0.8') || 0.8);
+const isMuted = ref(localStorage.getItem(MUTED_KEY) === 'true');
 
 function applyVolume(): void {
     if (masterGain && audioContext) {
@@ -166,12 +169,14 @@ export function useMorse() {
 
     const setVolume = (value: number): void => {
         volume.value = value;
+        localStorage.setItem(VOLUME_KEY, String(value));
         if (isMuted.value && value > 0) isMuted.value = false;
         applyVolume();
     };
 
     const toggleMute = (): void => {
         isMuted.value = !isMuted.value;
+        localStorage.setItem(MUTED_KEY, String(isMuted.value));
         applyVolume();
     };
 
