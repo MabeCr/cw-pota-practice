@@ -3,12 +3,18 @@ import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
 import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { KeyerType, ChatVisibility } from '@/stores/settingsStore';
+import type { KeyerType, ChatVisibility, QsoValidationMode } from '@/stores/settingsStore';
 
 const chatVisibilityOptions: { value: ChatVisibility; label: string; title: string }[] = [
     { value: 'show',  label: 'Show',  title: 'Chat messages are fully visible' },
     { value: 'blur',  label: 'Blur',  title: 'Messages are blurred — hover to read' },
     { value: 'hide',  label: 'Hide',  title: 'Conversation panel is hidden entirely' },
+]
+
+const qsoValidationOptions: { value: QsoValidationMode; label: string; title: string }[] = [
+    { value: 'none',      label: 'Off',       title: 'No validation — log anything without feedback' },
+    { value: 'immediate', label: 'Immediate', title: 'Shows ✓/✗ as each QSO is logged' },
+    { value: 'completed', label: 'Completed', title: 'Shows ? while active — reveals after activation ends' },
 ]
 
 const { volume, isMuted, setVolume, toggleMute } = useMorse();
@@ -221,6 +227,20 @@ onUnmounted(() => {
                 :class="{ active: settings.chatVisibility === opt.value }"
                 :title="opt.title"
                 @click="settings.setChatVisibility(opt.value)"
+              >{{ opt.label }}</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
+            <label class="pref-label">QSO Validation</label>
+            <div class="segment-group">
+              <button
+                v-for="opt in qsoValidationOptions"
+                :key="opt.value"
+                class="segment-btn"
+                :class="{ active: settings.qsoValidation === opt.value }"
+                :title="opt.title"
+                @click="settings.setQsoValidation(opt.value)"
               >{{ opt.label }}</button>
             </div>
           </div>

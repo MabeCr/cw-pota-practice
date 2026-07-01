@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
+import type { QsoValidationMode } from '@/types/activation';
 
 export type KeyerType = 'straight' | 'iambic-a' | 'iambic-b';
 export type ChatVisibility = 'show' | 'blur' | 'hide';
+export type { QsoValidationMode };
 
 const STORAGE_KEY = 'cw-pota-settings';
 
@@ -31,7 +33,8 @@ function defaultState() {
         ditKey:         (saved.ditKey         as string)         ?? 'BracketLeft',
         dahKey:         (saved.dahKey         as string)         ?? 'BracketRight',
         keyerType:      (saved.keyerType      as KeyerType)      ?? 'iambic-a' as KeyerType,
-        chatVisibility: (saved.chatVisibility as ChatVisibility) ?? 'show' as ChatVisibility,
+        chatVisibility:  (saved.chatVisibility  as ChatVisibility)      ?? 'show'  as ChatVisibility,
+        qsoValidation:   (saved.qsoValidation   as QsoValidationMode)   ?? 'none'  as QsoValidationMode,
     };
 }
 
@@ -80,6 +83,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setChatVisibility(value: ChatVisibility) {
             this.chatVisibility = value;
+            saveToStorage(this.$state);
+        },
+        setQsoValidation(value: QsoValidationMode) {
+            this.qsoValidation = value;
             saveToStorage(this.$state);
         },
     },

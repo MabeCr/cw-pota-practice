@@ -6,6 +6,11 @@ import { US_STATES } from '@/constants/states'
 import type { Activation, QSO } from '@/types/activation'
 import EditActivationDialog from '@/components/EditActivationDialog.vue'
 
+function activationAccuracy(act: Activation): { validated: number; wrong: number } {
+    const withResult = act.qsoList.filter(q => q.correct === true || q.correct === false)
+    return { validated: withResult.length, wrong: withResult.filter(q => !q.correct).length }
+}
+
 const router = useRouter()
 const activationStore = useActivationStore()
 
@@ -133,6 +138,30 @@ function deleteActivation(id: string, parkName: string) {
     activationStore.deleteActivation(id)
 }
 
+// ── Accuracy column ──────────────────────────────────────────────────────────
+
+const hasAnyValidation = computed(() =>
+    activations.value.some(act => act.validationMode && act.validationMode !== 'none')
+)
+
+function accuracyClass(act: Activation): string {
+    const { wrong } = activationAccuracy(act)
+    if (wrong === 0) return 'accuracy-perfect'
+    if (wrong <= 2)  return 'accuracy-warn'
+    return 'accuracy-bad'
+}
+
+function accuracyTitle(act: Activation): string {
+    const { validated, wrong } = activationAccuracy(act)
+    if (wrong === 0) return `All ${validated} QSO${validated !== 1 ? 's' : ''} logged correctly`
+    return `${wrong} mistake${wrong !== 1 ? 's' : ''} across ${validated} validated QSO${validated !== 1 ? 's' : ''}`
+}
+
+function accuracyDisplay(act: Activation): string {
+    const { wrong } = activationAccuracy(act)
+    return wrong === 0 ? '✓' : String(wrong)
+}
+
 // ── Edit activation ───────────────────────────────────────────────────────────
 
 const editingActivation = ref<Activation | null>(null)
@@ -168,6 +197,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
               <th class="center" title="Unique contacts (/ total if duplicates exist)">QSOs</th>
               <th class="center" title="An indicator showing whether the park was activated">Activated</th>
               <th title="The status of the activation">Status</th>
+              <th v-if="hasAnyValidation" class="center" title="QSO logging accuracy">Accuracy</th>
               <th></th>
             </tr>
           </thead>
@@ -197,6 +227,23 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
                 <span class="badge" :class="act.endedAt ? 'badge-ended' : 'badge-active'">
                   {{ act.endedAt ? 'Ended' : 'Active' }}
                 </span>
+              </td>
+              <td v-if="hasAnyValidation" class="center">
+                <template v-if="act.validationMode && act.validationMode !== 'none'">
+                  <span
+                    v-if="act.validationMode === 'completed' && !act.endedAt"
+                    class="accuracy-pending"
+                    title="Accuracy revealed when activation ends"
+                  >–</span>
+                  <span
+                    v-else-if="activationAccuracy(act).validated > 0"
+                    class="accuracy-badge"
+                    :class="accuracyClass(act)"
+                    :title="accuracyTitle(act)"
+                  >{{ accuracyDisplay(act) }}</span>
+                  <span v-else class="accuracy-none">–</span>
+                </template>
+                <span v-else class="accuracy-none">–</span>
               </td>
               <td class="action-cell">
                 <button :class="act.endedAt ? 'view-btn' : 'resume-btn'" @click="resume(act.id)">
@@ -530,6 +577,26 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   color: #b91c1c;
   border-color: #fca5a5;
 }
+
+.accuracy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: default;
+}
+
+.accuracy-perfect { background: #d1fae5; color: #065f46; }
+.accuracy-warn    { background: #fef3c7; color: #92400e; }
+.accuracy-bad     { background: #fee2e2; color: #b91c1c; }
+.accuracy-pending,
+.accuracy-none    { color: #ccc; font-size: 0.82rem; font-family: var(--font-mono); }
 
 .empty-state {
   display: flex;

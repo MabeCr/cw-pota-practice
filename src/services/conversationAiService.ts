@@ -203,6 +203,15 @@ export class ConversationAiService {
                 this.sendHunterMessage(hunter, msg, true);
                 hunter.qsoStep = 'HUNTER_RST';
 
+                if (this.lastActivationId) {
+                    useActivationStore().addGroundTruth(this.lastActivationId, {
+                        callsign: hunter.callsign,
+                        rst,
+                        stateCode: hunter.state.code.toUpperCase(),
+                        park2parkId: hunter.park2parkID ?? null,
+                    })
+                }
+
             } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
                 await this.randomDelay();
                 this.sendHunterMessage(hunter, `RR ${hunter.callsign}`, true);

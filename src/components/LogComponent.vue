@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, nextTick, watch, useTemplateRef, computed } from 'vue'
 import { useQsoUtils } from '../composables/useQsoUtils'
-import type { QSO } from '../types/activation'
+import type { QSO, QsoValidationMode } from '../types/activation'
 
-const props = defineProps<{ qsoList: QSO[]; readonly?: boolean }>()
+const props = defineProps<{ qsoList: QSO[]; readonly?: boolean; validationMode?: QsoValidationMode }>()
 const emit  = defineEmits<{
   'add-qso':    [qso: QSO]
   'update-qso': [index: number, qso: QSO]
@@ -16,6 +16,9 @@ const sentRSTInput     = useTemplateRef<HTMLInputElement>('sentRSTInput')
 const receivedRSTInput = useTemplateRef<HTMLInputElement>('receivedRSTInput')
 const theirStateInput  = useTemplateRef<HTMLInputElement>('theirStateInput')
 const theirParkInput   = useTemplateRef<HTMLInputElement>('theirParkInput')
+
+const showValidation = computed(() => !!props.validationMode && props.validationMode !== 'none')
+const colCount = computed(() => showValidation.value ? 7 : 6)
 
 const uniqueContactCount = computed(() => new Set(props.qsoList.map(q => q.theirCall)).size)
 const isActivated = computed(() => uniqueContactCount.value >= 10)
@@ -148,6 +151,7 @@ watch(() => props.qsoList.length, async () => {
             <th>Sent RST</th>
             <th>Rcvd RST</th>
             <th>Location</th>
+            <th v-if="showValidation" class="center">Correct</th>
             <th></th>
           </tr>
         </thead>
@@ -165,6 +169,11 @@ watch(() => props.qsoList.length, async () => {
             <td class="mono exch-cell">
               {{ qso.theirState }}<template v-if="qso.theirPark"><span class="exch-sep">·</span>{{ qso.theirPark }}<span class="p2p-badge">P2P</span></template>
             </td>
+            <td v-if="showValidation" class="correct-cell">
+              <span v-if="qso.correct === null"  class="correct-pending" title="Revealed when activation ends">?</span>
+              <span v-else-if="qso.correct === true"  class="correct-yes">✓</span>
+              <span v-else-if="qso.correct === false" class="correct-no">✗</span>
+            </td>
             <td class="action-cell">
               <button
                 v-if="!readonly"
@@ -175,7 +184,7 @@ watch(() => props.qsoList.length, async () => {
             </td>
           </tr>
           <tr v-if="qsoList.length === 0" class="empty-row">
-            <td colspan="6">No contacts logged yet.</td>
+            <td :colspan="colCount">No contacts logged yet.</td>
           </tr>
         </tbody>
       </table>
@@ -539,6 +548,32 @@ tr:hover .delete-row-btn {
 }
 
 .exch-cell { white-space: nowrap; }
+
+.correct-cell {
+  text-align: center;
+  width: 60px;
+  padding: 4px 8px;
+}
+
+.correct-yes,
+.correct-no,
+.correct-pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.correct-yes     { background: #d1fae5; color: #065f46; }
+.correct-no      { background: #fee2e2; color: #b91c1c; }
+.correct-pending { background: #f3f4f6; color: #9ca3af; font-style: italic; }
+
+.qso-table th.center { text-align: center; }
 
 .exch-sep {
   margin: 0 5px;
