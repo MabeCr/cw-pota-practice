@@ -87,10 +87,15 @@ watch(
 
 const chatContainer = useTemplateRef('chatContainer');
 
+function normalizeProsigns(text: string): string {
+    // Standalone "BK" (word boundary) → prosign <BK>
+    return text.replace(/\bBK\b/g, '<BK>');
+}
+
 function sendMessage() {
   if (props.readonly) return;
   if (message.value.trim()) {
-    chatStore.addMessage('You', message.value.trim());
+    chatStore.addMessage('You', normalizeProsigns(message.value.trim()));
     message.value = '';
   }
 }

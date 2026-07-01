@@ -161,8 +161,8 @@ export class ConversationAiService {
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
                 const msg = hunter.park2parkID
-                    ? `BK TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} BK`
-                    : `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`;
+                    ? `<BK> TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} <BK>`
+                    : `<BK> TU UR ${rst} ${rst} ${stateCode} ${stateCode} <BK>`;
                 this.sendHunterMessage(hunter, msg);
                 hunter.qsoStep = 'HUNTER_RST';
 
@@ -219,7 +219,8 @@ export class ConversationAiService {
     }
 
     private isExchangeLike(message: string): boolean {
-        return message.trimEnd().endsWith('BK');
+        const trimmed = message.trimEnd();
+        return trimmed.endsWith('BK') || trimmed.endsWith('<BK>');
     }
 
     private isPartialCallInMessage(message: string, callsign: string): boolean {

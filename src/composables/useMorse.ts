@@ -132,14 +132,34 @@ export function useMorse() {
 
         let t = ctx.currentTime;
 
+        // Split a word into prosign tokens (<XX>) or single characters
+        function tokenizeWord(word: string): string[] {
+            const tokens: string[] = [];
+            let i = 0;
+            while (i < word.length) {
+                if (word[i] === '<') {
+                    const end = word.indexOf('>', i);
+                    if (end !== -1) {
+                        tokens.push(word.slice(i, end + 1));
+                        i = end + 1;
+                        continue;
+                    }
+                }
+                tokens.push(word[i]);
+                i++;
+            }
+            return tokens;
+        }
+
         const words = text.toUpperCase().split(/\s+/).filter(w => w.length > 0);
 
         words.forEach((word, wi) => {
             const isLastWord = wi === words.length - 1;
+            const tokens = tokenizeWord(word);
 
-            word.split('').forEach((char, ci) => {
-                const isLastChar = ci === word.length - 1;
-                const code = MORSE_CODE[char];
+            tokens.forEach((token, ti) => {
+                const isLastToken = ti === tokens.length - 1;
+                const code = MORSE_CODE[token];
                 if (!code) return;
 
                 code.split('').forEach((element, ei) => {
@@ -155,7 +175,7 @@ export function useMorse() {
 
                     if (!isLastElement) {
                         t += dit;
-                    } else if (!isLastChar) {
+                    } else if (!isLastToken) {
                         t += dit * 3;
                     } else if (!isLastWord) {
                         t += dit * 7;
