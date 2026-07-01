@@ -16,19 +16,34 @@ function startActivating() {
         <p class="hero-eyebrow">Morse Code Simulator</p>
         <h1 class="landing-title">CW POTA Practice</h1>
         <div class="morse-divider" aria-hidden="true">
-          <span class="dot"></span>
-          <span class="dash"></span>
-          <span class="dash"></span>
-          <span class="dot"></span>
+          <!-- C: -.-.  Q: --.-  P: .--.  O: ---  T: -  A: .- -->
+          <!-- CQ -->
+          <span class="dash"></span><span class="dot"></span><span class="dash"></span><span class="dot"></span>
+          <span class="letterspace"></span>
+          <span class="dash"></span><span class="dash"></span><span class="dot"></span><span class="dash"></span>
+          <span class="wordspace"></span>
+          <!-- POTA -->
+          <span class="dot"></span><span class="dash"></span><span class="dash"></span><span class="dot"></span>
+          <span class="letterspace"></span>
+          <span class="dash"></span><span class="dash"></span><span class="dash"></span>
           <span class="letterspace"></span>
           <span class="dash"></span>
-          <span class="dash"></span>
-          <span class="dash"></span>
+          <span class="letterspace"></span>
+          <span class="dot"></span><span class="dash"></span>
+          <span class="wordspace"></span>
+          <!-- CQ -->
+          <span class="dash"></span><span class="dot"></span><span class="dash"></span><span class="dot"></span>
+          <span class="letterspace"></span>
+          <span class="dash"></span><span class="dash"></span><span class="dot"></span><span class="dash"></span>
+          <span class="wordspace"></span>
+          <!-- POTA -->
+          <span class="dot"></span><span class="dash"></span><span class="dash"></span><span class="dot"></span>
+          <span class="letterspace"></span>
+          <span class="dash"></span><span class="dash"></span><span class="dash"></span>
           <span class="letterspace"></span>
           <span class="dash"></span>
           <span class="letterspace"></span>
-          <span class="dot"></span>
-          <span class="dash"></span>
+          <span class="dot"></span><span class="dash"></span>
         </div>
         <p class="landing-subtitle">
           Simulate a POTA activation and work through a real CW pileup — at your own pace.
@@ -73,7 +88,7 @@ function startActivating() {
 }
 
 .landing-content {
-  max-width: 720px;
+  max-width: 960px;
   width: 100%;
   text-align: center;
 }
@@ -84,29 +99,29 @@ function startActivating() {
 }
 
 .hero-eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #3771d4;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 
 .landing-title {
-  font-size: 3rem;
+  font-size: 4.2rem;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #111;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   line-height: 1.1;
 }
 
 .landing-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   color: #555;
   line-height: 1.6;
-  max-width: 520px;
-  margin: 20px auto 0;
+  max-width: 640px;
+  margin: 24px auto 0;
 }
 
 /* ── Morse divider ── */
@@ -138,20 +153,24 @@ function startActivating() {
   width: 10px;
 }
 
+.wordspace {
+  width: 36px;
+}
+
 /* ── Feature cards ── */
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 48px;
+  gap: 20px;
+  margin-bottom: 56px;
   text-align: left;
 }
 
 .feature-card {
   background: #f8f9fc;
   border: 1px solid #e4e8f0;
-  border-radius: 10px;
-  padding: 22px 20px;
+  border-radius: 12px;
+  padding: 30px 26px;
   transition: box-shadow 0.15s, border-color 0.15s;
 }
 
@@ -163,27 +182,27 @@ function startActivating() {
 .feature-icon {
   display: inline-block;
   font-family: monospace;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   color: #3771d4;
   background: #dbeafe;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 12px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-bottom: 16px;
 }
 
 .feature-title {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .feature-desc {
-  font-size: 0.85rem;
+  font-size: 0.93rem;
   color: #666;
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -191,13 +210,13 @@ function startActivating() {
 .start-button {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
+  gap: 12px;
+  padding: 16px 40px;
   background-color: #3771d4;
   color: white;
   border: none;
-  border-radius: 7px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, box-shadow 0.15s;

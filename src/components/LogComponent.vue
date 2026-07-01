@@ -145,8 +145,8 @@ watch(() => props.qsoList.length, async () => {
           <tr>
             <th>Time</th>
             <th>Callsign</th>
-            <th>Sent</th>
-            <th>Rcvd</th>
+            <th>Sent RST</th>
+            <th>Rcvd RST</th>
             <th>Location</th>
             <th></th>
           </tr>

@@ -12,10 +12,23 @@ import NavBar from '@/components/NavBar.vue';
 </template>
 
 <style>
+:root {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+  --bg-page: #eef0f5;
+}
+
 html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: #1a1a1a;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 </style>
 
@@ -30,5 +43,6 @@ html, body, #app {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  background: var(--bg-page);
 }
 </style>

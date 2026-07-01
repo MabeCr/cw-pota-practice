@@ -332,6 +332,10 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  padding: 20px 22px 16px;
 }
 
 .lookup-panel {
@@ -340,6 +344,10 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  padding: 20px 18px 16px;
 }
 
 .panel-header {
@@ -351,17 +359,18 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .panel-title {
-  font-size: 1.1rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #3771d4;
   margin: 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .logbook-count {
   font-size: 0.82rem;
-  color: #888;
+  color: #aaa;
+  font-family: var(--font-mono);
 }
 
 /* ── Activation table ────────────────────────────── */
@@ -369,8 +378,8 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #c0c0c0;
-  border-radius: 6px;
+  border: 1px solid #e4e7ee;
+  border-radius: 8px;
   min-height: 0;
 }
 
@@ -387,15 +396,15 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .logbook-table th {
-  background: #f7f7f8;
-  color: #666;
-  font-size: 0.72rem;
-  font-weight: 600;
+  background: #f7f8fb;
+  color: #3771d4;
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.09em;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #c0c0c0;
+  border-bottom: 1px solid #e4e7ee;
 }
 
 .logbook-table td {
@@ -410,11 +419,11 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .logbook-table tbody tr:nth-child(even) td {
-  background: #f0f0f3;
+  background: #f7f8fb;
 }
 
 .logbook-table tbody tr:hover td {
-  background: #e8e8ed;
+  background: #eef1f8;
 }
 
 .row-highlighted td {
@@ -422,7 +431,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .park-ref {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-weight: 600;
   font-size: 0.82rem;
   color: #3771d4;
@@ -435,7 +444,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .mono {
-  font-family: monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0.03em;
 }
 
@@ -575,7 +584,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   align-items: center;
   justify-content: center;
   font-size: 0.58rem;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
   border-radius: 3px;
   letter-spacing: 0.03em;
@@ -604,13 +613,13 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .lookup-input {
   width: 100%;
   padding: 8px 30px 8px 10px;
-  border: 1px solid #d4d4d4;
-  border-radius: 5px;
+  border: 1px solid #dde0e8;
+  border-radius: 6px;
   font-size: 0.9rem;
-  font-family: monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0.05em;
   box-sizing: border-box;
-  background: #fafafa;
+  background: #fafbfc;
 }
 
 .lookup-input:focus {
@@ -671,7 +680,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .lookup-call {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1rem;
   color: #1a1a1a;
@@ -687,10 +696,10 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .lookup-park      { font-size: 0.78rem; color: #555; }
-.lookup-park-ref  { font-family: monospace; font-weight: 600; color: #3771d4; margin-right: 3px; }
+.lookup-park-ref  { font-family: var(--font-mono); font-weight: 600; color: #3771d4; margin-right: 3px; }
 .lookup-meta      { font-size: 0.72rem; color: #999; }
 
-.lookup-rst       { font-family: monospace; font-size: 0.78rem; color: #666; }
+.lookup-rst       { font-family: var(--font-mono); font-size: 0.78rem; color: #666; }
 .lookup-rst-label { font-weight: 700; color: #999; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .lookup-rst-sep   { margin: 0 5px; color: #ddd; }
 </style>

@@ -53,40 +53,40 @@ function onStart(parkReference: string, parkName: string, callsign: string, park
 
 .hero {
   text-align: center;
-  max-width: 480px;
+  max-width: 640px;
 }
 
 .hero-sub {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #3771d4;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 
 .hero-title {
-  font-size: 2.4rem;
+  font-size: 3.4rem;
   font-weight: 800;
   color: #1a1a1a;
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   letter-spacing: -0.01em;
 }
 
 .hero-desc {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: #666;
-  line-height: 1.6;
-  margin: 0 0 32px;
+  line-height: 1.65;
+  margin: 0 0 40px;
 }
 
 .start-btn {
-  padding: 14px 36px;
+  padding: 16px 44px;
   background: #3771d4;
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
