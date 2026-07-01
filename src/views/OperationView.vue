@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoute, useRouter } from 'vue-router'
 import LogComponent from '@/components/LogComponent.vue'
 import ConversationComponent from '@/components/ConversationComponent.vue'
@@ -13,6 +14,7 @@ const route  = useRoute()
 const router = useRouter()
 const activationStore = useActivationStore()
 const chatStore       = useChatStore()
+const settingsStore   = useSettingsStore()
 
 const activationId = route.params.id as string
 const activation   = computed(() => activationStore.getById(activationId))

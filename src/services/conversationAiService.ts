@@ -51,9 +51,23 @@ export class ConversationAiService {
         chatStore.addMessage(message.originator, message.message);
     }
 
-    private sendHunterMessage(hunter: Station, msg: string): void {
-        this.hunterLastMessage.set(hunter.callsign, msg);
-        this.sendMessage({ originator: hunter.callsign, message: msg });
+    private sendHunterMessage(hunter: Station, msg: string, applyErrors = false): void {
+        const finalMsg = applyErrors ? this.withErrorNoise(msg) : msg;
+        this.hunterLastMessage.set(hunter.callsign, finalMsg);
+        this.sendMessage({ originator: hunter.callsign, message: finalMsg });
+    }
+
+    private withErrorNoise(message: string): string {
+        const ERROR_CHARS = ['E', 'I', 'T', 'N', 'S', 'M'];
+        return message.split(' ').map(token => {
+            if (token.startsWith('<') || token.length <= 1 || Math.random() >= 0.01) {
+                return token;
+            }
+            const breakAt = Math.floor(Math.random() * token.length) + 1;
+            const partial = token.slice(0, breakAt);
+            const errorChar = ERROR_CHARS[Math.floor(Math.random() * ERROR_CHARS.length)];
+            return `${partial}${errorChar} <HH> ${token}`;
+        }).join(' ');
     }
 
     private setupWatcher(): void {
@@ -161,14 +175,14 @@ export class ConversationAiService {
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
                 const msg = hunter.park2parkID
-                    ? `BK TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} BK`
-                    : `BK TU UR ${rst} ${rst} ${stateCode} ${stateCode} BK`;
-                this.sendHunterMessage(hunter, msg);
+                    ? `<BK> TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} <BK>`
+                    : `<BK> TU UR ${rst} ${rst} ${stateCode} ${stateCode} <BK>`;
+                this.sendHunterMessage(hunter, msg, true);
                 hunter.qsoStep = 'HUNTER_RST';
 
             } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendHunterMessage(hunter, `RR ${hunter.callsign}`);
+                this.sendHunterMessage(hunter, `RR ${hunter.callsign}`, true);
 
             } else if (
                 this.isExchangeLike(userMessage) &&
@@ -179,15 +193,15 @@ export class ConversationAiService {
                 await this.randomDelay();
                 // Re-check after the delay in case another hunter claimed the QSO while we waited
                 if (this.inQsoWithCallsign !== null && this.inQsoWithCallsign !== hunter.callsign) return;
-                this.sendHunterMessage(hunter, `NN ${hunterCall}`);
+                this.sendHunterMessage(hunter, `NN ${hunterCall}`, true);
 
             } else if (this.isPartialCallInMessage(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendHunterMessage(hunter, hunterCall);
+                this.sendHunterMessage(hunter, hunterCall, true);
 
             } else if (this.isCallsignError(userMessage, hunterCall)) {
                 await this.randomDelay();
-                this.sendHunterMessage(hunter, `NN ${hunterCall}`);
+                this.sendHunterMessage(hunter, `NN ${hunterCall}`, true);
             }
 
         } else if (hunter.qsoStep === 'HUNTER_RST' && userMessage.includes('73')) {
@@ -219,7 +233,8 @@ export class ConversationAiService {
     }
 
     private isExchangeLike(message: string): boolean {
-        return message.trimEnd().endsWith('BK');
+        const trimmed = message.trimEnd();
+        return trimmed.endsWith('BK') || trimmed.endsWith('<BK>');
     }
 
     private isPartialCallInMessage(message: string, callsign: string): boolean {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 
 export type KeyerType = 'straight' | 'iambic-a' | 'iambic-b';
+export type ChatVisibility = 'show' | 'blur' | 'hide';
 
 const STORAGE_KEY = 'cw-pota-settings';
 
@@ -27,9 +28,10 @@ function defaultState() {
         hunterMaxWpm:   (saved.hunterMaxWpm   as number) ?? 20,
         hunterCount:    (saved.hunterCount    as number) ?? 3,
         noiseLevel:     (saved.noiseLevel     as number) ?? 15,
-        ditKey:     (saved.ditKey     as string)    ?? 'BracketLeft',
-        dahKey:     (saved.dahKey     as string)    ?? 'BracketRight',
-        keyerType:  (saved.keyerType  as KeyerType) ?? 'iambic-a' as KeyerType,
+        ditKey:         (saved.ditKey         as string)         ?? 'BracketLeft',
+        dahKey:         (saved.dahKey         as string)         ?? 'BracketRight',
+        keyerType:      (saved.keyerType      as KeyerType)      ?? 'iambic-a' as KeyerType,
+        chatVisibility: (saved.chatVisibility as ChatVisibility) ?? 'show' as ChatVisibility,
     };
 }
 
@@ -74,6 +76,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setKeyerType(value: KeyerType) {
             this.keyerType = value;
+            saveToStorage(this.$state);
+        },
+        setChatVisibility(value: ChatVisibility) {
+            this.chatVisibility = value;
             saveToStorage(this.$state);
         },
     },

@@ -53,8 +53,11 @@ function startNoise(ctx: AudioContext, target: AudioNode): void {
     noiseSource.start();
 }
 
-const volume = ref(0.8);   // 0–1
-const isMuted = ref(false);
+const VOLUME_KEY = 'cw-pota-volume';
+const MUTED_KEY  = 'cw-pota-muted';
+
+const volume  = ref(parseFloat(localStorage.getItem(VOLUME_KEY) ?? '0.8') || 0.8);
+const isMuted = ref(localStorage.getItem(MUTED_KEY) === 'true');
 
 function applyVolume(): void {
     if (masterGain && audioContext) {
@@ -129,14 +132,34 @@ export function useMorse() {
 
         let t = ctx.currentTime;
 
+        // Split a word into prosign tokens (<XX>) or single characters
+        function tokenizeWord(word: string): string[] {
+            const tokens: string[] = [];
+            let i = 0;
+            while (i < word.length) {
+                if (word[i] === '<') {
+                    const end = word.indexOf('>', i);
+                    if (end !== -1) {
+                        tokens.push(word.slice(i, end + 1));
+                        i = end + 1;
+                        continue;
+                    }
+                }
+                tokens.push(word[i]);
+                i++;
+            }
+            return tokens;
+        }
+
         const words = text.toUpperCase().split(/\s+/).filter(w => w.length > 0);
 
         words.forEach((word, wi) => {
             const isLastWord = wi === words.length - 1;
+            const tokens = tokenizeWord(word);
 
-            word.split('').forEach((char, ci) => {
-                const isLastChar = ci === word.length - 1;
-                const code = MORSE_CODE[char];
+            tokens.forEach((token, ti) => {
+                const isLastToken = ti === tokens.length - 1;
+                const code = MORSE_CODE[token];
                 if (!code) return;
 
                 code.split('').forEach((element, ei) => {
@@ -152,7 +175,7 @@ export function useMorse() {
 
                     if (!isLastElement) {
                         t += dit;
-                    } else if (!isLastChar) {
+                    } else if (!isLastToken) {
                         t += dit * 3;
                     } else if (!isLastWord) {
                         t += dit * 7;
@@ -166,12 +189,14 @@ export function useMorse() {
 
     const setVolume = (value: number): void => {
         volume.value = value;
+        localStorage.setItem(VOLUME_KEY, String(value));
         if (isMuted.value && value > 0) isMuted.value = false;
         applyVolume();
     };
 
     const toggleMute = (): void => {
         isMuted.value = !isMuted.value;
+        localStorage.setItem(MUTED_KEY, String(isMuted.value));
         applyVolume();
     };
 
