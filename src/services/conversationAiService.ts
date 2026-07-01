@@ -13,6 +13,7 @@ import { US_STATES } from "@/constants/states";
 export class ConversationAiService {
     private activeStationList = ref<Station[]>([]);
     private inQsoWithCallsign: string | null = null;
+    private partialQueryTarget: string | null = null;
     private hunterLastMessage = new Map<string, string>();
     private lastActivationId: string | null = null;
     private lastProcessedLength = 0;
@@ -26,6 +27,7 @@ export class ConversationAiService {
 
         this.lastActivationId = activationId;
         this.inQsoWithCallsign = null;
+        this.partialQueryTarget = null;
         this.hunterLastMessage.clear();
         this.lastProcessedLength = historyLength;
 
@@ -98,13 +100,21 @@ export class ConversationAiService {
         const userMessage = message.message.trim().toUpperCase();
 
         if (userMessage.includes('CQ') && userMessage.includes('POTA')) {
+            this.partialQueryTarget = null;
             await this.handleCQ();
             return;
         }
 
         if (userMessage === '?' && this.inQsoWithCallsign === null) {
-            for (const hunter of [...this.activeStationList.value]) {
-                void this.repeatLastMessage(hunter);
+            const target = this.partialQueryTarget
+                ? this.activeStationList.value.find(s => s.callsign === this.partialQueryTarget)
+                : undefined;
+            if (target) {
+                void this.repeatLastMessage(target);
+            } else {
+                for (const hunter of [...this.activeStationList.value]) {
+                    void this.repeatLastMessage(hunter);
+                }
             }
             return;
         }
@@ -113,6 +123,19 @@ export class ConversationAiService {
             const hunter = this.activeStationList.value.find(s => s.callsign === this.inQsoWithCallsign);
             if (hunter) void this.repeatLastMessage(hunter, true);
             return;
+        }
+
+        // Update the partial query target before dispatching.
+        // If exactly one hunter matches a partial, focus subsequent bare "?" on them.
+        if (this.inQsoWithCallsign === null) {
+            const partialMatches = this.activeStationList.value.filter(h =>
+                this.isPartialCallInMessage(userMessage, h.callsign.toUpperCase())
+            );
+            if (partialMatches.length === 1) {
+                this.partialQueryTarget = partialMatches[0]!.callsign;
+            } else if (partialMatches.length > 1) {
+                this.partialQueryTarget = null;
+            }
         }
 
         // Fire each hunter's response independently so their random delays don't stack
