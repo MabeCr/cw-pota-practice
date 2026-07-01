@@ -3,7 +3,13 @@ import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
 import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { KeyerType } from '@/stores/settingsStore';
+import type { KeyerType, ChatVisibility } from '@/stores/settingsStore';
+
+const chatVisibilityOptions: { value: ChatVisibility; label: string; title: string }[] = [
+    { value: 'show',  label: 'Show',  title: 'Chat messages are fully visible' },
+    { value: 'blur',  label: 'Blur',  title: 'Messages are blurred — hover to read' },
+    { value: 'hide',  label: 'Hide',  title: 'Conversation panel is hidden entirely' },
+]
 
 const { volume, isMuted, setVolume, toggleMute } = useMorse();
 const settings = useSettingsStore();
@@ -202,6 +208,20 @@ onUnmounted(() => {
                 class="pref-slider"
               />
               <span class="range-value">{{ settings.noiseLevel === 0 ? 'Off' : settings.noiseLevel + '%' }}</span>
+            </div>
+          </div>
+
+          <div class="pref-row">
+            <label class="pref-label">Chat Messages</label>
+            <div class="segment-group">
+              <button
+                v-for="opt in chatVisibilityOptions"
+                :key="opt.value"
+                class="segment-btn"
+                :class="{ active: settings.chatVisibility === opt.value }"
+                :title="opt.title"
+                @click="settings.setChatVisibility(opt.value)"
+              >{{ opt.label }}</button>
             </div>
           </div>
         </section>
@@ -408,5 +428,41 @@ onUnmounted(() => {
   font-family: var(--font-sans);
   font-size: 0.85rem;
   font-weight: 500;
+}
+
+.segment-group {
+  display: flex;
+  border: 1px solid #dde0e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.segment-btn {
+  flex: 1;
+  padding: 6px 14px;
+  background: #fafbfc;
+  border: none;
+  border-right: 1px solid #dde0e8;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segment-btn:last-child {
+  border-right: none;
+}
+
+.segment-btn:hover:not(.active) {
+  background: #eff6ff;
+  color: #3771d4;
+}
+
+.segment-btn.active {
+  background: #3771d4;
+  color: #fff;
+  font-weight: 600;
 }
 </style>

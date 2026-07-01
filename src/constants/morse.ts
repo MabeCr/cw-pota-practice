@@ -35,5 +35,6 @@ export const MORSE_CODE: { [key: string]: string } = {
   '7': '--...',
   '8': '---..',
   '9': '----.',
+  '<BK>': '-...-.-',
   ' ': ' ',
 };

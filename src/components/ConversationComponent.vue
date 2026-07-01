@@ -4,8 +4,10 @@ import { useChatStore } from '../stores/chatStore';
 import { getConversationAiService } from '@/services/conversationAiService';
 import { useMorse, suspendAudio, startBackgroundNoise } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 const props = defineProps<{ readonly?: boolean }>()
+const settings = useSettingsStore()
 
 const chatStore = useChatStore();
 const conversationAiService = getConversationAiService();
@@ -127,7 +129,12 @@ watch(
     <div class="chat-header">
       <h2 class="chat-title">Activation Chat</h2>
     </div>
-    <div class="chat-container" ref="chatContainer">
+    <div
+      v-if="settings.chatVisibility !== 'hide'"
+      class="chat-container"
+      ref="chatContainer"
+      :class="{ 'chat-container--blur': settings.chatVisibility === 'blur' }"
+    >
       <div
         v-for="(msg, index) in chatStore.messages"
         :key="index"
@@ -138,6 +145,9 @@ watch(
         <div class="message-name">{{ msg.originator }}</div>
         <div class="message-text">{{ msg.originator !== 'You' ? displayedText[index] : msg.message }}</div>
       </div>
+    </div>
+    <div v-else class="chat-hidden-placeholder">
+      Messages hidden
     </div>
     <div class="qso-status-header">
       <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
@@ -206,6 +216,31 @@ watch(
   resize: none;
   height: 100%;
   width: 80%;
+}
+
+.chat-hidden-placeholder {
+  flex: 1;
+  width: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-container--blur .chat-message {
+  filter: blur(6px);
+  transition: filter 0.2s ease;
+  user-select: none;
+}
+
+.chat-container--blur .chat-message:hover {
+  filter: blur(0);
+  user-select: auto;
 }
 
 .chat-message {
