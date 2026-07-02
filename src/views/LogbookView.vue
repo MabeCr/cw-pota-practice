@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActivationStore } from '@/stores/activationStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { US_STATES } from '@/constants/states'
 import type { Activation, QSO } from '@/types/activation'
 import EditActivationDialog from '@/components/EditActivationDialog.vue'
@@ -13,6 +14,7 @@ function activationAccuracy(act: Activation): { validated: number; wrong: number
 
 const router = useRouter()
 const activationStore = useActivationStore()
+const settingsStore = useSettingsStore()
 
 const activations = computed<Activation[]>(() =>
     [...activationStore.activations].sort(
@@ -104,14 +106,18 @@ const hoveredContactStates = computed(() => {
 })
 
 function heatBg(count: number, max: number): string {
-  if (count === 0) return '#efefef'
+  if (count === 0) {
+    return settingsStore.theme === 'dark' ? '#2a2e3f' : settingsStore.theme === 'warm' ? '#d8cfc0' : '#efefef'
+  }
   const t = Math.min(count / max, 1)
   const l = Math.round(75 - t * 45) // 75% (light blue) → 30% (dark blue)
   return `hsl(220, 65%, ${l}%)`
 }
 
 function heatFg(count: number, max: number): string {
-  if (count === 0) return '#bbb'
+  if (count === 0) {
+    return settingsStore.theme === 'dark' ? '#3a4050' : '#bbb'
+  }
   const t = Math.min(count / max, 1)
   const l = Math.round(75 - t * 45)
   return l > 52 ? '#1e3a6e' : '#fff'
@@ -379,9 +385,9 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card);
   padding: 20px 22px 16px;
 }
 
@@ -391,9 +397,9 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card);
   padding: 20px 18px 16px;
 }
 
@@ -408,7 +414,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .panel-title {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #3771d4;
+  color: var(--accent-text);
   margin: 0;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -416,7 +422,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 
 .logbook-count {
   font-size: 0.82rem;
-  color: #aaa;
+  color: var(--text-muted);
   font-family: var(--font-mono);
 }
 
@@ -425,7 +431,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #e4e7ee;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   min-height: 0;
 }
@@ -443,21 +449,21 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .logbook-table th {
-  background: #f7f8fb;
-  color: #3771d4;
+  background: var(--bg-surface-alt);
+  color: var(--accent-text);
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #e4e7ee;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .logbook-table td {
   padding: 9px 12px;
-  color: #222;
-  border-bottom: 1px solid #e0e0e0;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
 
@@ -466,28 +472,28 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .logbook-table tbody tr:nth-child(even) td {
-  background: #f7f8fb;
+  background: var(--bg-surface-alt);
 }
 
 .logbook-table tbody tr:hover td {
-  background: #eef1f8;
+  background: var(--accent-light);
 }
 
 .row-highlighted td {
-  background: #fef9c3 !important;
+  background: var(--row-highlight-bg) !important;
 }
 
 .park-ref {
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 0.82rem;
-  color: #3771d4;
+  color: var(--accent-text);
   display: block;
 }
 
 .park-name {
   font-size: 0.88rem;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .mono {
@@ -508,15 +514,15 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   letter-spacing: 0.04em;
 }
 
-.badge-active  { background: #dbeafe; color: #1d4ed8; }
-.badge-ended   { background: #f0f0f0; color: #666; }
+.badge-active  { background: var(--badge-active-bg);  color: var(--badge-active-text); }
+.badge-ended   { background: var(--badge-ended-bg);   color: var(--badge-ended-text); }
 
 .activated-icon { font-size: 1rem; font-weight: 700; }
-.icon-yes       { color: #16a34a; }
-.icon-no        { color: #d1d5db; }
+.icon-yes       { color: var(--badge-success-text); }
+.icon-no        { color: var(--text-faint); }
 
 .qso-total {
-  color: #bbb;
+  color: var(--text-faint);
   font-size: 0.8em;
 }
 
@@ -537,45 +543,45 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   white-space: nowrap;
 }
 
-.resume-btn       { background: #16a34a; color: #fff; }
-.resume-btn:hover { background: #15803d; }
-.view-btn         { background: #3771d4; color: #fff; }
-.view-btn:hover   { background: #2b5aab; }
+.resume-btn       { background: var(--btn-success);       color: #fff; }
+.resume-btn:hover { background: var(--btn-success-hover); }
+.view-btn         { background: var(--accent);            color: #fff; }
+.view-btn:hover   { background: var(--accent-hover); }
 
 .edit-btn {
   margin-left: 6px;
   padding: 5px 9px;
   background: none;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-default);
   border-radius: 5px;
   font-size: 0.85rem;
-  color: #aaa;
+  color: var(--text-faint);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .edit-btn:hover {
-  background: #eff6ff;
-  color: #3771d4;
-  border-color: #93c5fd;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border-color: var(--accent);
 }
 
 .delete-btn {
   margin-left: 6px;
   padding: 5px 9px;
   background: none;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-default);
   border-radius: 5px;
   font-size: 0.75rem;
-  color: #aaa;
+  color: var(--text-faint);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .delete-btn:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+  background: var(--badge-error-bg);
+  color: var(--badge-error-text);
+  border-color: var(--badge-error-text);
 }
 
 .accuracy-badge {
@@ -592,11 +598,11 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   cursor: default;
 }
 
-.accuracy-perfect { background: #d1fae5; color: #065f46; }
-.accuracy-warn    { background: #fef3c7; color: #92400e; }
-.accuracy-bad     { background: #fee2e2; color: #b91c1c; }
+.accuracy-perfect { background: var(--badge-success-bg); color: var(--badge-success-text); }
+.accuracy-warn    { background: var(--badge-warn-bg);    color: var(--badge-warn-text); }
+.accuracy-bad     { background: var(--badge-error-bg);   color: var(--badge-error-text); }
 .accuracy-pending,
-.accuracy-none    { color: #ccc; font-size: 0.82rem; font-family: var(--font-mono); }
+.accuracy-none    { color: var(--text-faint); font-size: 0.82rem; font-family: var(--font-mono); }
 
 .empty-state {
   display: flex;
@@ -605,14 +611,14 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   justify-content: center;
   height: 100%;
   min-height: 200px;
-  color: #aaa;
+  color: var(--text-muted);
   font-style: italic;
   gap: 6px;
 }
 
 .empty-state p { margin: 0; }
-.empty-sub { font-size: 0.88rem; color: #bbb; }
-.empty-sub strong { color: #888; }
+.empty-sub { font-size: 0.88rem; color: var(--text-faint); }
+.empty-sub strong { color: var(--text-muted); }
 
 /* ── Heatmaps ────────────────────────────────────── */
 
@@ -633,10 +639,10 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #888;
+  color: var(--text-muted);
   margin: 0 0 8px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .state-grid {
@@ -680,20 +686,21 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .lookup-input {
   width: 100%;
   padding: 8px 30px 8px 10px;
-  border: 1px solid #dde0e8;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   font-size: 0.9rem;
   font-family: var(--font-mono);
   letter-spacing: 0.05em;
   box-sizing: border-box;
-  background: #fafbfc;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .lookup-input:focus {
   outline: none;
-  border-color: #3771d4;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 2px var(--accent-shadow);
 }
 
 .lookup-clear {
@@ -705,7 +712,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   border: none;
   padding: 2px 4px;
   font-size: 0.7rem;
-  color: #bbb;
+  color: var(--text-faint);
   cursor: pointer;
   line-height: 1;
   border-radius: 3px;
@@ -713,7 +720,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 }
 
 .lookup-clear:hover {
-  color: #888;
+  color: var(--text-muted);
 }
 
 .lookup-results {
@@ -726,7 +733,7 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 
 .lookup-empty {
   font-size: 0.85rem;
-  color: #aaa;
+  color: var(--text-muted);
   font-style: italic;
   text-align: center;
   padding: 24px 0;
@@ -734,23 +741,23 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 
 .lookup-card {
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--bg-input);
   cursor: default;
   transition: background 0.12s, border-color 0.12s;
 }
 
 .lookup-card:hover {
-  background: #fef9c3;
-  border-color: #fcd34d;
+  background: var(--row-highlight-bg);
+  border-color: var(--row-highlight-border);
 }
 
 .lookup-call {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1rem;
-  color: #1a1a1a;
+  color: var(--text-primary);
   letter-spacing: 0.05em;
   margin-bottom: 3px;
 }
@@ -762,11 +769,11 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
   margin-bottom: 5px;
 }
 
-.lookup-park      { font-size: 0.78rem; color: #555; }
-.lookup-park-ref  { font-family: var(--font-mono); font-weight: 600; color: #3771d4; margin-right: 3px; }
-.lookup-meta      { font-size: 0.72rem; color: #999; }
+.lookup-park      { font-size: 0.78rem; color: var(--text-secondary); }
+.lookup-park-ref  { font-family: var(--font-mono); font-weight: 600; color: var(--accent-text); margin-right: 3px; }
+.lookup-meta      { font-size: 0.72rem; color: var(--text-muted); }
 
-.lookup-rst       { font-family: var(--font-mono); font-size: 0.78rem; color: #666; }
-.lookup-rst-label { font-weight: 700; color: #999; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.lookup-rst-sep   { margin: 0 5px; color: #ddd; }
+.lookup-rst       { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
+.lookup-rst-label { font-weight: 700; color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.lookup-rst-sep   { margin: 0 5px; color: var(--border-default); }
 </style>

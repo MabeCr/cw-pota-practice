@@ -289,7 +289,7 @@ watch(() => props.qsoList.length, async () => {
   height: 100%;
   padding: 20px 24px 16px;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--bg-surface);
 }
 
 .log-header {
@@ -303,7 +303,7 @@ watch(() => props.qsoList.length, async () => {
 .log-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -314,21 +314,21 @@ watch(() => props.qsoList.length, async () => {
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 600;
-  background: #f0f0f0;
-  color: #555;
+  background: var(--badge-ended-bg);
+  color: var(--badge-ended-text);
   letter-spacing: 0.03em;
   transition: background-color 0.3s, color 0.3s;
 }
 
 .activation-badge.activated {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--badge-success-bg);
+  color: var(--badge-success-text);
 }
 
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   margin-bottom: 14px;
 }
@@ -346,21 +346,21 @@ watch(() => props.qsoList.length, async () => {
 }
 
 .qso-table th {
-  background: #f7f7f8;
-  color: #666;
+  background: var(--bg-surface-alt);
+  color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #c0c0c0;
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .qso-table td {
   padding: 7px 12px;
-  color: #222;
-  border-bottom: 1px solid #e0e0e0;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .qso-table tbody tr:last-child td {
@@ -368,7 +368,7 @@ watch(() => props.qsoList.length, async () => {
 }
 
 .qso-table tbody tr:nth-child(even) td {
-  background: #f0f0f3;
+  background: var(--bg-surface-alt);
 }
 
 .row-clickable {
@@ -376,15 +376,15 @@ watch(() => props.qsoList.length, async () => {
 }
 
 .row-clickable:hover td {
-  background: #e8e8ed;
+  background: var(--accent-light);
 }
 
 .row-editing td {
-  background: #eff6ff !important;
+  background: var(--accent-light) !important;
 }
 
 .row-editing td:first-child {
-  box-shadow: inset 3px 0 0 #3771d4;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .action-cell {
@@ -400,7 +400,7 @@ watch(() => props.qsoList.length, async () => {
   border: 1px solid transparent;
   border-radius: 4px;
   font-size: 0.7rem;
-  color: #bbb;
+  color: var(--text-faint);
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
   line-height: 1;
@@ -411,9 +411,9 @@ tr:hover .delete-row-btn {
 }
 
 .delete-row-btn:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+  background: var(--badge-error-bg);
+  color: var(--badge-error-text);
+  border-color: var(--badge-error-text);
 }
 
 .mono {
@@ -423,7 +423,7 @@ tr:hover .delete-row-btn {
 
 .empty-row td {
   text-align: center;
-  color: #aaa;
+  color: var(--text-muted);
   font-style: italic;
   padding: 24px 0;
 }
@@ -455,7 +455,7 @@ tr:hover .delete-row-btn {
 .input-field label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #555;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -463,20 +463,21 @@ tr:hover .delete-row-btn {
 .input-field input {
   width: 100%;
   padding: 7px 9px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--border-default);
   border-radius: 5px;
   font-size: 0.9rem;
   font-family: monospace;
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
-  background: #fafafa;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .input-field input:focus {
   outline: none;
-  border-color: #3771d4;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 2px var(--accent-shadow);
 }
 
 .input-field input.error {
@@ -502,25 +503,25 @@ tr:hover .delete-row-btn {
   white-space: nowrap;
 }
 
-.add-button    { background: #3771d4; }
-.add-button:hover:not(:disabled) { background: #2b5aab; }
+.add-button    { background: var(--accent); }
+.add-button:hover:not(:disabled) { background: var(--accent-hover); }
 
-.update-button { background: #16a34a; }
-.update-button:hover { background: #15803d; }
+.update-button { background: var(--btn-success); }
+.update-button:hover { background: var(--btn-success-hover); }
 
 .cancel-button {
   padding: 7px 12px;
   background: none;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.12s;
   white-space: nowrap;
 }
 
-.cancel-button:hover { background: #f5f5f5; }
+.cancel-button:hover { background: var(--bg-surface-alt); }
 
 .p2p-toggle {
   width: 100%;
@@ -528,23 +529,23 @@ tr:hover .delete-row-btn {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--border-default);
   border-radius: 5px;
-  background: #fafafa;
-  color: #aaa;
+  background: var(--bg-input);
+  color: var(--text-faint);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .p2p-toggle.active {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border-color: #93c5fd;
+  background: var(--accent-light-2);
+  color: var(--accent-dark);
+  border-color: var(--accent);
 }
 
 .p2p-toggle:hover:not(.active) {
-  border-color: #b0b0b0;
-  color: #777;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
 }
 
 .exch-cell { white-space: nowrap; }
@@ -569,15 +570,15 @@ tr:hover .delete-row-btn {
   line-height: 1;
 }
 
-.correct-yes     { background: #d1fae5; color: #065f46; }
-.correct-no      { background: #fee2e2; color: #b91c1c; }
-.correct-pending { background: #f3f4f6; color: #9ca3af; font-style: italic; }
+.correct-yes     { background: var(--badge-success-bg); color: var(--badge-success-text); }
+.correct-no      { background: var(--badge-error-bg);   color: var(--badge-error-text); }
+.correct-pending { background: var(--badge-ended-bg);   color: var(--text-muted); font-style: italic; }
 
 .qso-table th.center { text-align: center; }
 
 .exch-sep {
   margin: 0 5px;
-  color: #ccc;
+  color: var(--text-faint);
   font-weight: 400;
 }
 
@@ -587,8 +588,8 @@ tr:hover .delete-row-btn {
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--badge-active-bg);
+  color: var(--badge-active-text);
   border-radius: 4px;
   vertical-align: middle;
 }

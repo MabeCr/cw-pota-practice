@@ -3,7 +3,13 @@ import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
 import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { KeyerType, ChatVisibility, QsoValidationMode } from '@/stores/settingsStore';
+import type { KeyerType, ChatVisibility, QsoValidationMode, AppTheme } from '@/stores/settingsStore';
+
+const themeOptions: { value: AppTheme; label: string; title: string }[] = [
+    { value: 'light', label: 'Light', title: 'Clean white interface' },
+    { value: 'dark',  label: 'Dark',  title: 'Easy on the eyes in low light' },
+    { value: 'warm',  label: 'Warm',  title: 'Soft tan and brown tones' },
+]
 
 const chatVisibilityOptions: { value: ChatVisibility; label: string; title: string }[] = [
     { value: 'show',  label: 'Show',  title: 'Chat messages are fully visible' },
@@ -46,8 +52,25 @@ onUnmounted(() => {
 
     <div class="pref-grid">
 
-      <!-- Left column: Station + Keyer Settings -->
+      <!-- Left column: Appearance + Station + Keyer Settings -->
       <div class="pref-col">
+
+        <section class="pref-section">
+          <h2 class="section-heading">App Appearance</h2>
+          <div class="pref-row">
+            <label class="pref-label">Theme</label>
+            <div class="segment-group">
+              <button
+                v-for="opt in themeOptions"
+                :key="opt.value"
+                class="segment-btn"
+                :class="{ active: settings.theme === opt.value }"
+                :title="opt.title"
+                @click="settings.setTheme(opt.value)"
+              >{{ opt.label }}</button>
+            </div>
+          </div>
+        </section>
 
         <section class="pref-section">
           <h2 class="section-heading">Station</h2>
@@ -286,7 +309,7 @@ onUnmounted(() => {
 .pref-page-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 28px;
   letter-spacing: -0.01em;
 }
@@ -311,10 +334,10 @@ onUnmounted(() => {
 }
 
 .pref-section {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 10px;
   padding: 24px 28px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card);
 }
 
 .section-heading {
@@ -322,10 +345,10 @@ onUnmounted(() => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #3771d4;
+  color: var(--accent-text);
   margin: 0 0 18px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #eef0f5;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pref-row {
@@ -333,7 +356,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   padding: 9px 0;
-  border-bottom: 1px solid #f4f5f8;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pref-row:last-child {
@@ -349,28 +372,29 @@ onUnmounted(() => {
   width: 130px;
   font-size: 0.88rem;
   font-weight: 500;
-  color: #444;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .pref-input {
   padding: 7px 11px;
-  border: 1px solid #dde0e8;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   font-size: 0.95rem;
   font-family: var(--font-mono);
   width: 160px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  background: #fafbfc;
+  background: var(--bg-input);
+  color: var(--text-primary);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .pref-input:focus {
   outline: none;
-  border-color: #3771d4;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(55, 113, 212, 0.15);
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--accent-shadow);
 }
 
 .range-row {
@@ -383,7 +407,7 @@ onUnmounted(() => {
 .pref-slider {
   flex: 1;
   cursor: pointer;
-  accent-color: #3771d4;
+  accent-color: var(--accent);
 }
 
 .range-value {
@@ -391,7 +415,7 @@ onUnmounted(() => {
   text-align: right;
   font-size: 0.875rem;
   font-family: var(--font-mono);
-  color: #555;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -407,27 +431,29 @@ onUnmounted(() => {
 
 .pref-select {
   padding: 7px 11px;
-  border: 1px solid #dde0e8;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   font-size: 0.9rem;
   font-family: var(--font-sans);
-  background: #fafbfc;
+  background: var(--bg-input);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .pref-select:focus {
   outline: none;
-  border-color: #3771d4;
-  box-shadow: 0 0 0 3px rgba(55, 113, 212, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-shadow);
 }
 
 .key-bind-btn {
   padding: 6px 16px;
   min-width: 88px;
-  border: 1px solid #dde0e8;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  background: #fafbfc;
+  background: var(--bg-input);
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.95rem;
   font-weight: 600;
@@ -437,14 +463,14 @@ onUnmounted(() => {
 }
 
 .key-bind-btn:hover {
-  border-color: #3771d4;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--accent-light);
 }
 
 .key-bind-btn.capturing {
-  border-color: #3771d4;
-  background: #e8f0ff;
-  color: #3771d4;
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-text);
   font-family: var(--font-sans);
   font-size: 0.85rem;
   font-weight: 500;
@@ -452,7 +478,7 @@ onUnmounted(() => {
 
 .segment-group {
   display: flex;
-  border: 1px solid #dde0e8;
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -460,13 +486,13 @@ onUnmounted(() => {
 .segment-btn {
   flex: 1;
   padding: 6px 14px;
-  background: #fafbfc;
+  background: var(--bg-input);
   border: none;
-  border-right: 1px solid #dde0e8;
+  border-right: 1px solid var(--border-default);
   font-family: var(--font-sans);
   font-size: 0.875rem;
   font-weight: 500;
-  color: #666;
+  color: var(--text-muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -476,12 +502,12 @@ onUnmounted(() => {
 }
 
 .segment-btn:hover:not(.active) {
-  background: #eff6ff;
-  color: #3771d4;
+  background: var(--accent-light);
+  color: var(--accent-text);
 }
 
 .segment-btn.active {
-  background: #3771d4;
+  background: var(--accent);
   color: #fff;
   font-weight: 600;
 }

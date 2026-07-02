@@ -61,28 +61,28 @@ function onStart(parkReference: string, parkName: string, callsign: string, park
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #3771d4;
+  color: var(--accent-text);
   margin: 0 0 16px;
 }
 
 .hero-title {
   font-size: 3.4rem;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 20px;
   letter-spacing: -0.01em;
 }
 
 .hero-desc {
   font-size: 1.15rem;
-  color: #666;
+  color: var(--text-muted);
   line-height: 1.65;
   margin: 0 0 40px;
 }
 
 .start-btn {
   padding: 16px 44px;
-  background: #3771d4;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -94,7 +94,7 @@ function onStart(parkReference: string, parkName: string, callsign: string, park
 }
 
 .start-btn:hover {
-  background: #2b5aab;
+  background: var(--accent-hover);
   transform: translateY(-1px);
 }
 

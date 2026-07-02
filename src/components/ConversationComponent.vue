@@ -203,7 +203,7 @@ watch(
 .chat-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -215,12 +215,13 @@ watch(
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 16px;
   resize: none;
   height: 100%;
   width: 80%;
+  background: var(--bg-surface);
 }
 
 .chat-hidden-placeholder {
@@ -229,9 +230,9 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px dashed #ddd;
+  border: 1px dashed var(--border-default);
   border-radius: 6px;
-  color: #ccc;
+  color: var(--text-faint);
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -270,8 +271,9 @@ watch(
 
 .message-self {
   align-self: flex-start;
-  background-color: #dcf8c6; /* Light green */
-  border: 1px solid #c5e1a5;
+  background-color: var(--msg-self-bg);
+  border: 1px solid var(--msg-self-border);
+  color: var(--text-primary);
 }
 
 .message-other {
@@ -282,12 +284,14 @@ watch(
 .chat-input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 16px;
   resize: none;
   height: 80vh;
   width: 80%;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .input-container {
@@ -310,7 +314,7 @@ watch(
 
 .send-button {
   padding: 10px 20px;
-  background-color: #4CAF50;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 5px;
@@ -319,7 +323,7 @@ watch(
 }
 
 .send-button:hover {
-  background-color: #45a049;
+  background-color: var(--accent-hover);
 }
 
 .qso-status-header {
@@ -329,14 +333,14 @@ watch(
   max-width: 80%;
   margin-bottom: 10px;
   padding: 10px;
-  background-color: #f0f0f0;
+  background-color: var(--bg-surface-alt);
   border-radius: 5px;
   font-size: 14px;
 }
 
 .active-hunters {
   font-weight: bold;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .volume-control {
@@ -360,6 +364,6 @@ watch(
 .volume-slider {
   flex: 1;
   cursor: pointer;
-  accent-color: #3771d4;
+  accent-color: var(--accent);
 }
 </style>

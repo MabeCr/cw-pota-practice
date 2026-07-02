@@ -156,18 +156,18 @@ function handleSave() {
 }
 
 .dialog {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 10px;
   padding: 32px 36px 28px;
   width: 420px;
   max-width: 90vw;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .dialog-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 24px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -181,7 +181,7 @@ function handleSave() {
   display: block;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #555;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   margin-bottom: 6px;
@@ -189,7 +189,7 @@ function handleSave() {
 
 .field-optional {
   font-weight: 400;
-  color: #aaa;
+  color: var(--text-faint);
   text-transform: none;
   letter-spacing: 0;
   font-size: 0.7rem;
@@ -202,20 +202,21 @@ function handleSave() {
 .field-input {
   width: 100%;
   padding: 9px 11px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 0.95rem;
   font-family: monospace;
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
-  background: #fafafa;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .field-input:focus {
   outline: none;
-  border-color: #3771d4;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(55, 113, 212, 0.18);
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 2px var(--accent-shadow);
 }
 
 .field-input--narrow {
@@ -227,10 +228,10 @@ function handleSave() {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #fff;
-  border: 1px solid #c0c0c0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   list-style: none;
   margin: 0;
   padding: 4px 0;
@@ -248,33 +249,33 @@ function handleSave() {
 }
 
 .result-item:hover {
-  background: #f0f4ff;
+  background: var(--accent-light);
 }
 
 .result-ref {
   font-family: monospace;
   font-weight: 600;
   font-size: 0.85rem;
-  color: #3771d4;
+  color: var(--accent-text);
 }
 
 .result-name {
   font-size: 0.88rem;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .result-loc {
-  color: #888;
+  color: var(--text-muted);
 }
 
 .search-hint {
   font-size: 0.78rem;
-  color: #3771d4;
+  color: var(--accent-text);
   margin-top: 4px;
 }
 
 .search-hint.muted {
-  color: #999;
+  color: var(--text-muted);
 }
 
 .dialog-actions {
@@ -287,21 +288,21 @@ function handleSave() {
 .btn-cancel {
   padding: 8px 18px;
   background: none;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
   font-size: 0.9rem;
   cursor: pointer;
-  color: #555;
+  color: var(--text-secondary);
   transition: background 0.15s;
 }
 
 .btn-cancel:hover {
-  background: #f5f5f5;
+  background: var(--bg-surface-alt);
 }
 
 .btn-save {
   padding: 8px 22px;
-  background: #3771d4;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 5px;
@@ -312,7 +313,7 @@ function handleSave() {
 }
 
 .btn-save:hover:not(:disabled) {
-  background: #2b5aab;
+  background: var(--accent-hover);
 }
 
 .btn-save:disabled {
