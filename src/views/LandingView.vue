@@ -103,7 +103,7 @@ function startActivating() {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3771d4;
+  color: var(--accent-text);
   margin: 0 0 16px;
 }
 
@@ -111,14 +111,14 @@ function startActivating() {
   font-size: 4.2rem;
   font-weight: 800;
   letter-spacing: -0.01em;
-  color: #111;
+  color: var(--text-primary);
   margin: 0 0 24px;
   line-height: 1.1;
 }
 
 .landing-subtitle {
   font-size: 1.25rem;
-  color: #555;
+  color: var(--text-secondary);
   line-height: 1.6;
   max-width: 640px;
   margin: 24px auto 0;
@@ -137,7 +137,7 @@ function startActivating() {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #c0c8d8;
+  background: var(--border-default);
   flex-shrink: 0;
 }
 
@@ -145,7 +145,7 @@ function startActivating() {
   width: 22px;
   height: 7px;
   border-radius: 4px;
-  background: #c0c8d8;
+  background: var(--border-default);
   flex-shrink: 0;
 }
 
@@ -167,16 +167,16 @@ function startActivating() {
 }
 
 .feature-card {
-  background: #f8f9fc;
-  border: 1px solid #e4e8f0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 30px 26px;
   transition: box-shadow 0.15s, border-color 0.15s;
 }
 
 .feature-card:hover {
-  border-color: #c5d0e8;
-  box-shadow: 0 4px 16px rgba(55, 113, 212, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px var(--accent-shadow);
 }
 
 .feature-icon {
@@ -185,8 +185,8 @@ function startActivating() {
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #3771d4;
-  background: #dbeafe;
+  color: var(--accent-text);
+  background: var(--accent-light-2);
   padding: 5px 10px;
   border-radius: 5px;
   margin-bottom: 16px;
@@ -195,13 +195,13 @@ function startActivating() {
 .feature-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 10px;
 }
 
 .feature-desc {
   font-size: 0.93rem;
-  color: #666;
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0;
 }
@@ -212,7 +212,7 @@ function startActivating() {
   align-items: center;
   gap: 12px;
   padding: 16px 40px;
-  background-color: #3771d4;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -220,12 +220,12 @@ function startActivating() {
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(55, 113, 212, 0.3);
+  box-shadow: 0 2px 8px var(--accent-shadow);
 }
 
 .start-button:hover {
-  background-color: #2b5aab;
-  box-shadow: 0 4px 16px rgba(55, 113, 212, 0.4);
+  background-color: var(--accent-hover);
+  box-shadow: 0 4px 16px var(--accent-shadow);
 }
 
 .btn-arrow {

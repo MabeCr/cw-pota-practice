@@ -3,6 +3,7 @@ import type { QsoValidationMode } from '@/types/activation';
 
 export type KeyerType = 'straight' | 'iambic-a' | 'iambic-b';
 export type ChatVisibility = 'show' | 'blur' | 'hide';
+export type AppTheme = 'light' | 'dark' | 'warm';
 export type { QsoValidationMode };
 
 const STORAGE_KEY = 'cw-pota-settings';
@@ -35,6 +36,7 @@ function defaultState() {
         keyerType:      (saved.keyerType      as KeyerType)      ?? 'iambic-a' as KeyerType,
         chatVisibility:  (saved.chatVisibility  as ChatVisibility)      ?? 'show'  as ChatVisibility,
         qsoValidation:   (saved.qsoValidation   as QsoValidationMode)   ?? 'none'  as QsoValidationMode,
+        theme:           (saved.theme           as AppTheme)            ?? 'light' as AppTheme,
     };
 }
 
@@ -87,6 +89,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setQsoValidation(value: QsoValidationMode) {
             this.qsoValidation = value;
+            saveToStorage(this.$state);
+        },
+        setTheme(value: AppTheme) {
+            this.theme = value;
             saveToStorage(this.$state);
         },
     },

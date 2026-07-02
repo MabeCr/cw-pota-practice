@@ -108,7 +108,7 @@ function onKeyUp(event: KeyboardEvent) {
   width: 80%;
   margin-top: 12px;
   padding: 10px 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-default);
   border-radius: 8px;
   cursor: pointer;
   outline: none;
@@ -117,8 +117,8 @@ function onKeyUp(event: KeyboardEvent) {
 }
 
 .keyer-area.focused {
-  border-color: #3771d4;
-  background-color: #f0f4ff;
+  border-color: var(--accent);
+  background-color: var(--accent-light);
   cursor: default;
 }
 
@@ -131,25 +131,25 @@ function onKeyUp(event: KeyboardEvent) {
 
 .keyer-prompt {
   font-size: 0.82rem;
-  color: #aaa;
+  color: var(--text-faint);
 }
 
 .keyer-area.focused .keyer-prompt {
-  color: #3771d4;
+  color: var(--accent-text);
   font-weight: 500;
 }
 
 .keyer-type-badge {
   font-size: 0.72rem;
   padding: 2px 8px;
-  background: #ebebeb;
+  background: var(--bg-surface-alt);
   border-radius: 10px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .keyer-area.focused .keyer-type-badge {
-  background: #d0e0ff;
-  color: #3771d4;
+  background: var(--accent-light-2);
+  color: var(--accent-text);
 }
 
 .key-indicators {
@@ -165,21 +165,21 @@ function onKeyUp(event: KeyboardEvent) {
   gap: 4px;
   width: 72px;
   height: 60px;
-  border: 2px solid #d0d0d0;
+  border: 2px solid var(--border-default);
   border-radius: 6px;
-  background: #f8f8f8;
+  background: var(--bg-surface-alt);
   transition: background-color 0.04s, border-color 0.04s;
 }
 
 .key-square.lit {
-  background: #3771d4;
-  border-color: #2b5aab;
+  background: var(--accent);
+  border-color: var(--accent-hover);
 }
 
 .key-label {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #999;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -192,7 +192,7 @@ function onKeyUp(event: KeyboardEvent) {
   font-size: 1.15rem;
   font-family: monospace;
   font-weight: 700;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .key-square.lit .key-binding {

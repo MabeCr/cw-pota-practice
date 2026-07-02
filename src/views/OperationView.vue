@@ -137,8 +137,8 @@ function formatDate(iso: string): string {
   align-items: center;
   justify-content: space-between;
   padding: 8px 20px;
-  background: #f7f7f8;
-  border-bottom: 1px solid #c0c0c0;
+  background: var(--bg-surface-alt);
+  border-bottom: 1px solid var(--border-strong);
   flex-shrink: 0;
   gap: 12px;
 }
@@ -154,33 +154,33 @@ function formatDate(iso: string): string {
 .park-ref {
   font-family: monospace;
   font-weight: 700;
-  color: #3771d4;
+  color: var(--accent-text);
 }
 
 .park-name {
-  color: #1a1a1a;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .bar-sep {
-  color: #ccc;
+  color: var(--text-faint);
 }
 
 .bar-callsign {
   font-family: monospace;
-  color: #444;
+  color: var(--text-secondary);
 }
 
 .bar-date {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.82rem;
 }
 
 .badge-ended {
   padding: 1px 8px;
   border-radius: 999px;
-  background: #f0f0f0;
-  color: #888;
+  background: var(--badge-ended-bg);
+  color: var(--badge-ended-text);
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -190,27 +190,27 @@ function formatDate(iso: string): string {
 .edit-btn {
   padding: 2px 7px;
   background: none;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   font-size: 0.85rem;
-  color: #aaa;
+  color: var(--text-faint);
   cursor: pointer;
   line-height: 1.4;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .edit-btn:hover {
-  background: #eff6ff;
-  color: #3771d4;
-  border-color: #93c5fd;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border-color: var(--accent);
 }
 
 .ended-banner {
   padding: 6px 20px;
-  background: #fef3c7;
-  border-bottom: 1px solid #fcd34d;
+  background: var(--ended-banner-bg);
+  border-bottom: 1px solid var(--ended-banner-border);
   font-size: 0.8rem;
-  color: #92400e;
+  color: var(--ended-banner-text);
   flex-shrink: 0;
 }
 
@@ -227,21 +227,21 @@ function formatDate(iso: string): string {
 }
 
 .btn-end {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
 }
 
 .btn-end:hover {
-  background: #fecaca;
+  background: var(--btn-danger-hover);
 }
 
 .btn-reopen {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--btn-reopen-bg);
+  color: var(--btn-reopen-text);
 }
 
 .btn-reopen:hover {
-  background: #a7f3d0;
+  background: var(--btn-reopen-hover);
 }
 
 .app-container {

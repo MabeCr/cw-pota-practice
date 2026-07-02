@@ -26,8 +26,8 @@ const route = useRoute()
   justify-content: space-between;
   padding: 0 28px;
   height: 58px;
-  background: #141e2e;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
   flex-shrink: 0;
 }
 
@@ -42,12 +42,12 @@ const route = useRoute()
   font-family: var(--font-mono);
   font-size: 1rem;
   font-weight: 700;
-  color: #60a5fa;
+  color: var(--nav-brand-cw);
   letter-spacing: 0.1em;
 }
 
 .brand-sep {
-  color: #2d3f5a;
+  color: var(--nav-brand-sep);
   font-size: 1.1rem;
   line-height: 1;
   user-select: none;
@@ -56,7 +56,7 @@ const route = useRoute()
 .brand-name {
   font-size: 0.92rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--nav-brand-name);
   letter-spacing: 0.02em;
 }
 
@@ -68,7 +68,7 @@ const route = useRoute()
 .navbar-links a {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--nav-link);
   text-decoration: none;
   padding: 7px 14px;
   border-radius: 6px;
@@ -77,12 +77,12 @@ const route = useRoute()
 }
 
 .navbar-links a:hover {
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.07);
+  color: var(--nav-link-hover-text);
+  background: var(--nav-link-hover-bg);
 }
 
 .navbar-links a.router-link-active {
   color: #fff;
-  background: #3771d4;
+  background: var(--accent);
 }
 </style>
