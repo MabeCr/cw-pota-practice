@@ -1,6 +1,44 @@
 import { defineStore } from 'pinia'
-import type { Activation, QSO, ChatMessage } from '../types/activation'
+import type { Activation, QSO, ChatMessage, GroundTruthEntry } from '../types/activation'
 import type { Station } from '../types/station'
+import { useSettingsStore } from './settingsStore'
+
+// ── Validation helpers (module-level, no reactivity needed) ───────────────────
+
+function normalizeRst(s: string): string {
+    return s.toUpperCase().replace(/N/g, '9')
+}
+
+function normalizePark(s: string): string {
+    return s.toUpperCase().replace(/-/g, '')
+}
+
+function findGroundTruth(activation: Activation, callsign: string): GroundTruthEntry | undefined {
+    const norm = callsign.toUpperCase()
+    const entries = (activation.qsoGroundTruth ?? []).filter(g => g.callsign.toUpperCase() === norm)
+    return entries[entries.length - 1]
+}
+
+function checkCorrectness(qso: QSO, gt: GroundTruthEntry): boolean {
+    const callOk  = qso.theirCall.toUpperCase() === gt.callsign.toUpperCase()
+    const rstOk   = normalizeRst(qso.receivedRST) === normalizeRst(gt.rst)
+    const stateOk = qso.theirState.toUpperCase() === gt.stateCode.toUpperCase()
+    const parkOk  = gt.park2parkId
+        ? normalizePark(qso.theirPark ?? '') === normalizePark(gt.park2parkId)
+        : true
+    return callOk && rstOk && stateOk && parkOk
+}
+
+function annotateQso(activation: Activation, qso: QSO): QSO {
+    const mode = activation.validationMode
+    if (!mode || mode === 'none') return qso
+    const gt = findGroundTruth(activation, qso.theirCall)
+    if (!gt) return qso
+    const isCorrect = checkCorrectness(qso, gt)
+    if (mode === 'immediate') return { ...qso, correct: isCorrect }
+    // completed: reveal only after activation has ended
+    return { ...qso, correct: activation.endedAt ? isCorrect : null }
+}
 
 const STORAGE_KEY = 'cw-pota-activations'
 
@@ -42,6 +80,8 @@ export const useActivationStore = defineStore('activations', {
                 endedAt: null,
                 qsoList: [],
                 chatHistory: [],
+                validationMode: useSettingsStore().qsoValidation,
+                qsoGroundTruth: [],
             })
             save(this.activations)
             return id
@@ -50,7 +90,15 @@ export const useActivationStore = defineStore('activations', {
         addQso(id: string, qso: QSO): void {
             const a = this.activations.find(x => x.id === id)
             if (!a) return
-            a.qsoList.push(qso)
+            a.qsoList.push(annotateQso(a, qso))
+            save(this.activations)
+        },
+
+        addGroundTruth(id: string, entry: GroundTruthEntry): void {
+            const a = this.activations.find(x => x.id === id)
+            if (!a) return
+            if (!a.qsoGroundTruth) a.qsoGroundTruth = []
+            a.qsoGroundTruth.push(entry)
             save(this.activations)
         },
 
@@ -71,7 +119,7 @@ export const useActivationStore = defineStore('activations', {
         updateQso(id: string, index: number, qso: QSO): void {
             const a = this.activations.find(x => x.id === id)
             if (!a || index < 0 || index >= a.qsoList.length) return
-            a.qsoList[index] = { ...qso }
+            a.qsoList[index] = annotateQso(a, qso)
             save(this.activations)
         },
 
@@ -86,6 +134,14 @@ export const useActivationStore = defineStore('activations', {
             const a = this.activations.find(x => x.id === id)
             if (!a) return
             a.endedAt = new Date().toISOString()
+            // Reveal pending QSOs for completed validation mode
+            if (a.validationMode === 'completed') {
+                a.qsoList = a.qsoList.map(qso => {
+                    if (qso.correct !== null) return qso  // undefined or already revealed
+                    const gt = findGroundTruth(a, qso.theirCall)
+                    return { ...qso, correct: gt ? checkCorrectness(qso, gt) : false }
+                })
+            }
             save(this.activations)
         },
 

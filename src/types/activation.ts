@@ -1,5 +1,14 @@
 import type { Station } from './station'
 
+export type QsoValidationMode = 'none' | 'immediate' | 'completed'
+
+export interface GroundTruthEntry {
+  callsign: string
+  rst: string
+  stateCode: string
+  park2parkId: string | null
+}
+
 export interface QSO {
   date: string
   theirCall: string
@@ -7,6 +16,7 @@ export interface QSO {
   receivedRST: string
   theirState: string
   theirPark?: string
+  correct?: boolean | null  // undefined=no validation, null=pending reveal, true/false=result
 }
 
 export interface ChatMessage {
@@ -25,4 +35,6 @@ export interface Activation {
   qsoList: QSO[]
   chatHistory: ChatMessage[]
   activeHunters?: Station[]
+  validationMode?: QsoValidationMode
+  qsoGroundTruth?: GroundTruthEntry[]
 }

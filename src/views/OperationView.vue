@@ -103,6 +103,7 @@ function formatDate(iso: string): string {
       <div class="left-half">
         <LogComponent
           :qso-list="activation.qsoList"
+          :validation-mode="activation.validationMode"
           :readonly="!!activation.endedAt"
           @add-qso="onAddQso"
           @update-qso="onUpdateQso"

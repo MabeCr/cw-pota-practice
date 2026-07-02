@@ -2,11 +2,10 @@
 import { ref, computed, watch } from 'vue'
 import {
     isPotaReference,
-    lookupParkByReference,
-    searchParksByName,
-    type PotaPark,
-} from '@/composables/usePotaApi'
-import { US_STATES } from '@/constants/states'
+    lookupParkByRef,
+    searchParks,
+    type ParkEntry,
+} from '@/composables/usePotaParks'
 import type { Activation } from '@/types/activation'
 
 const props = defineProps<{ activation: Activation }>()
@@ -19,15 +18,8 @@ const emit = defineEmits<{
 const parkQuery    = ref('')
 const parkState    = ref('')
 const callsign     = ref('')
-const results      = ref<PotaPark[]>([])
-const selectedPark = ref<PotaPark | null>(null)
-const searching    = ref(false)
-const apiAvailable = ref(true)
-
-function locationToStateCode(locationName: string): string {
-    const normalized = locationName.trim().toLowerCase()
-    return US_STATES.find(s => s.name.toLowerCase() === normalized)?.code ?? ''
-}
+const results      = ref<ParkEntry[]>([])
+const selectedPark = ref<ParkEntry | null>(null)
 
 let suppressSearch = false
 
@@ -49,34 +41,23 @@ watch(parkQuery, (val) => {
     if (!val.trim()) return
 
     if (debounceTimer) clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => void runSearch(val.trim()), 400)
+    debounceTimer = setTimeout(() => runSearch(val.trim()), 400)
 })
 
-async function runSearch(query: string) {
-    searching.value = true
-    try {
-        let found: PotaPark[]
-        if (isPotaReference(query)) {
-            const single = await lookupParkByReference(query)
-            found = single ? [single] : []
-        } else {
-            found = await searchParksByName(query)
-        }
-        apiAvailable.value = true
-        results.value = found
-    } catch {
-        apiAvailable.value = false
-        results.value = []
-    } finally {
-        searching.value = false
+function runSearch(query: string) {
+    if (isPotaReference(query)) {
+        const single = lookupParkByRef(query)
+        results.value = single ? [single] : []
+    } else {
+        results.value = searchParks(query)
     }
 }
 
-function selectPark(park: PotaPark) {
+function selectPark(park: ParkEntry) {
     selectedPark.value = park
     suppressSearch = true
     parkQuery.value = `${park.reference} — ${park.name}`
-    parkState.value = locationToStateCode(park.locationName)
+    parkState.value = park.states[0] ?? ''
     results.value = []
 }
 
@@ -109,10 +90,6 @@ function handleSave() {
             autocomplete="off"
             spellcheck="false"
           />
-          <div v-if="searching" class="search-hint">Searching…</div>
-          <div v-else-if="!apiAvailable && parkQuery" class="search-hint muted">
-            API unavailable — enter free text
-          </div>
           <ul v-if="results.length" class="results-list">
             <li
               v-for="park in results"
@@ -121,10 +98,10 @@ function handleSave() {
               @click="selectPark(park)"
             >
               <span class="result-ref">{{ park.reference }}</span>
-              <span class="result-name">{{ park.name }}<span v-if="park.locationName" class="result-loc">, {{ park.locationName }}</span></span>
+              <span class="result-name">{{ park.name }}<span v-if="park.states.length" class="result-loc">, {{ park.states.join('/') }}</span></span>
             </li>
           </ul>
-          <div v-else-if="parkQuery && !searching && apiAvailable && results.length === 0 && !selectedPark" class="search-hint muted">
+          <div v-else-if="parkQuery && results.length === 0 && !selectedPark" class="search-hint muted">
             No parks found — your text will be used as the park name
           </div>
         </div>

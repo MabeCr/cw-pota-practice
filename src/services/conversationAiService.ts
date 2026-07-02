@@ -8,6 +8,7 @@ import { useQsoUtils } from "@/composables/useQsoUtils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useActivationStore } from "@/stores/activationStore";
 import { US_STATES } from "@/constants/states";
+import { getRandomParkForState } from "@/composables/usePotaParks";
 
 
 export class ConversationAiService {
@@ -203,6 +204,15 @@ export class ConversationAiService {
                 this.sendHunterMessage(hunter, msg, true);
                 hunter.qsoStep = 'HUNTER_RST';
 
+                if (this.lastActivationId) {
+                    useActivationStore().addGroundTruth(this.lastActivationId, {
+                        callsign: hunter.callsign,
+                        rst,
+                        stateCode: hunter.state.code.toUpperCase(),
+                        park2parkId: hunter.park2parkID ?? null,
+                    })
+                }
+
             } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
                 await this.randomDelay();
                 this.sendHunterMessage(hunter, `RR ${hunter.callsign}`, true);
@@ -328,7 +338,7 @@ export class ConversationAiService {
         const minWpm = Math.max(5, maxWpm - 5);
         const wpm = Math.floor(Math.random() * (maxWpm - minWpm + 1)) + minWpm;
         const park2parkID = Math.random() < 0.08
-            ? `K-${Math.floor(Math.random() * 9999) + 1}`
+            ? (getRandomParkForState(state.code)?.reference ?? null)
             : null;
         return {
             callsign: callsign ?? useQsoUtils().generateCall(),
