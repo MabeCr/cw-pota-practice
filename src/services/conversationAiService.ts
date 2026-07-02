@@ -8,6 +8,7 @@ import { useQsoUtils } from "@/composables/useQsoUtils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useActivationStore } from "@/stores/activationStore";
 import { US_STATES } from "@/constants/states";
+import { getRandomParkForState } from "@/composables/usePotaParks";
 
 
 export class ConversationAiService {
@@ -337,7 +338,7 @@ export class ConversationAiService {
         const minWpm = Math.max(5, maxWpm - 5);
         const wpm = Math.floor(Math.random() * (maxWpm - minWpm + 1)) + minWpm;
         const park2parkID = Math.random() < 0.08
-            ? `K-${Math.floor(Math.random() * 9999) + 1}`
+            ? (getRandomParkForState(state.code)?.reference ?? null)
             : null;
         return {
             callsign: callsign ?? useQsoUtils().generateCall(),
