@@ -31,6 +31,10 @@ function handleKeydown(e: KeyboardEvent): void {
     }
 }
 
+function normalize(s: string): string {
+    return s.replace(/<BK>/gi, 'BK')
+}
+
 function charMatches(typed: string, expected: string): boolean {
     return typed === expected || (expected === '9' && typed === 'N')
 }
@@ -39,8 +43,8 @@ type CharState = 'correct' | 'incorrect' | 'hint' | 'plain'
 interface DisplayChar { char: string; state: CharState }
 
 const typedChars = computed<DisplayChar[]>(() => {
-    const typed = props.modelValue
-    const expected = props.expectedText
+    const typed    = normalize(props.modelValue)
+    const expected = normalize(props.expectedText ?? '')
     if (!expected) {
         return typed.split('').map(c => ({ char: c, state: 'plain' as const }))
     }
@@ -55,8 +59,8 @@ const typedChars = computed<DisplayChar[]>(() => {
 })
 
 const hintChars = computed<DisplayChar[]>(() => {
-    const typed = props.modelValue
-    const expected = props.expectedText
+    const typed    = normalize(props.modelValue)
+    const expected = normalize(props.expectedText ?? '')
     if (!expected) return []
     return expected.slice(typed.length).split('').map(c => ({ char: c, state: 'hint' as const }))
 })

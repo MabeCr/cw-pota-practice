@@ -366,10 +366,11 @@ export class ConversationAiService {
 
     private createHunter(callsign?: string): Station {
         if (this.tutorialMode) {
+            const isSecond = this.tutorialQsoCount > 0
             return {
-                callsign: this.tutorialQsoCount === 0 ? 'W1AW' : 'KM4BE',
+                callsign: isSecond ? 'KM4BE' : 'W1AW',
                 state: { code: 'OH', name: 'Ohio' },
-                park2parkID: null,
+                park2parkID: isSecond ? 'US-1964' : null,
                 qsoStep: 'CQ',
                 frequency: 700,
                 wpm: 15,

@@ -3,7 +3,8 @@ import { useActivationStore } from '@/stores/activationStore'
 
 export interface TutorialStepDef {
     id: string
-    target?: string        // CSS selector using data-tutorial attribute
+    target?: string           // CSS selector — primary spotlight target
+    preferredTarget?: string  // when found in DOM, overrides target for spotlight only
     title: string
     body: string
     placement?: 'top' | 'bottom' | 'left' | 'right' | 'center'
@@ -34,9 +35,10 @@ export const TUTORIAL_STEPS: TutorialStepDef[] = [
     // 3
     {
         id: 'park-search',
-        target: '[data-tutorial="new-activation-dialog"]',
+        target: '[data-tutorial="park-search"]',
+        preferredTarget: '[data-tutorial="park-result"]',
         title: 'Find Your Park',
-        body: "Type a park name or POTA reference in the first field — try 'Caesar Creek'. Matching parks appear in a dropdown; click the result to select it.",
+        body: "Type a park name or POTA reference in this field — try 'Caesar Creek'. Matching parks appear in a dropdown; click the result to select it.",
         placement: 'right',
     },
     // 4
@@ -155,7 +157,7 @@ export const TUTORIAL_STEPS: TutorialStepDef[] = [
         id: 'work-tenth',
         target: '[data-tutorial="conversation-area"]',
         title: 'Work the Final Contact',
-        body: "Send CQ again and work one more contact. Follow the guide through the exchange. This step will advance automatically once the exchange wraps up.",
+        body: "Send CQ again. KM4BE will respond as a Park-to-Park contact — you'll see 'P2P' in their call-in. Follow the guide through the exchange as normal; your park reference will be included automatically. This step advances once the exchange is complete.",
         placement: 'left',
         canAdvance({ tutorialActivationId: _ }) {
             return useChatStore().messages.some(
@@ -166,10 +168,10 @@ export const TUTORIAL_STEPS: TutorialStepDef[] = [
     // 18
     {
         id: 'log-tenth',
-        target: '[data-tutorial="log-form"]',
+        target: '[data-tutorial="log-container"]',
         title: 'Log the Final Contact',
-        body: "Log this last contact. Watch the counter at the top — it'll flip to 'Activated' once you save it.",
-        placement: 'top',
+        body: "KM4BE is a Park-to-Park contact. Fill in their callsign and RSTs, then click the P2P button and enter K1964 as their park reference. Once you save it, the counter at the top will flip to 'Activated'.",
+        placement: 'right',
         canAdvance({ tutorialActivationId }) {
             if (!tutorialActivationId) return false
             return (useActivationStore().getById(tutorialActivationId)?.qsoList.length ?? 0) >= 10

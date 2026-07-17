@@ -32,15 +32,13 @@ function updateSpotlight() {
         tooltipVisible.value = true
         return
     }
-    const el = document.querySelector(s.target)
-    if (el) {
-        spotlightRect.value = el.getBoundingClientRect()
-        tooltipVisible.value = true
-    } else {
-        spotlightRect.value = null
-        // Keep tooltip hidden until the element mounts so it never renders centered over content
-        tooltipVisible.value = false
-    }
+    const primary   = document.querySelector(s.target)
+    const preferred = s.preferredTarget ? document.querySelector(s.preferredTarget) : null
+    // Spotlight prefers the more specific element once it appears; falls back to primary
+    const spotlightEl = preferred ?? primary
+    spotlightRect.value = spotlightEl ? spotlightEl.getBoundingClientRect() : null
+    // Tooltip is visible as long as the primary target is in the DOM
+    tooltipVisible.value = primary !== null
 }
 
 const PAD = 10

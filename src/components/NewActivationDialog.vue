@@ -88,6 +88,7 @@ function handleStart() {
               v-for="park in results"
               :key="park.reference"
               class="result-item"
+              data-tutorial="park-result"
               @click="selectPark(park)"
             >
               <span class="result-ref">{{ park.reference }}</span>

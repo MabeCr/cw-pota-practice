@@ -16,6 +16,10 @@ function getGreeting(): string {
     return 'GE'
 }
 
+function normalize(s: string): string {
+    return s.replace(/<BK>/gi, 'BK')
+}
+
 function charMatches(typed: string, expected: string): boolean {
     return typed === expected || (expected === '9' && typed === 'N')
 }
@@ -96,8 +100,8 @@ export function useQsoGuide(
     function isAllGreen(typed: string): boolean {
         const expected = expectedText.value
         if (!expected) return false
-        const t = typed.trim().toUpperCase()
-        const e = expected.toUpperCase()
+        const t = normalize(typed.trim().toUpperCase())
+        const e = normalize(expected.toUpperCase())
         if (t.length !== e.length) return false
         return t.split('').every((c, i) => charMatches(c, e[i] ?? ''))
     }
@@ -130,7 +134,9 @@ export function useQsoGuide(
     function onHunterMessage(originator: string): void {
         const p = phase.value
 
-        if (p.phase === 'wait_hunters') {
+        // If a hunter is calling in, we must have sent CQ — advance regardless of whether
+        // the guide detected the send (guards against BK normalisation gaps or timing issues)
+        if (p.phase === 'wait_hunters' || p.phase === 'cq') {
             phase.value = { phase: 'pick_hunter' }
             return
         }
