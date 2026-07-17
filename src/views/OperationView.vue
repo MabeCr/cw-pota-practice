@@ -111,7 +111,11 @@ function formatDate(iso: string): string {
         />
       </div>
       <div class="right-half">
-        <ConversationComponent :readonly="!!activation.endedAt" />
+        <ConversationComponent
+          :readonly="!!activation.endedAt"
+          :park-callsign="activation.callsign"
+          :park-state="activation.parkState ?? ''"
+        />
       </div>
     </div>
 

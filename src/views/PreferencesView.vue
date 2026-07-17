@@ -241,6 +241,24 @@ onUnmounted(() => {
           </div>
 
           <div class="pref-row">
+            <label class="pref-label">Guided QSOs</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.guidedQsos }"
+                title="No step-by-step guidance"
+                @click="settings.setGuidedQsos(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.guidedQsos }"
+                title="Shows what to send at each step of the exchange"
+                @click="settings.setGuidedQsos(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
             <label class="pref-label">Chat Messages</label>
             <div class="segment-group">
               <button

@@ -4,9 +4,15 @@ import { useChatStore } from '../stores/chatStore';
 import { getConversationAiService } from '@/services/conversationAiService';
 import { useMorse, suspendAudio, startBackgroundNoise } from '@/composables/useMorse';
 import KeyerComponent from '@/components/KeyerComponent.vue';
+import GuidedInput from '@/components/GuidedInput.vue';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useQsoGuide } from '@/composables/useQsoGuide';
 
-const props = defineProps<{ readonly?: boolean }>()
+const props = defineProps<{
+    readonly?: boolean
+    parkCallsign?: string
+    parkState?: string
+}>()
 const settings = useSettingsStore()
 
 const chatStore = useChatStore();
@@ -19,6 +25,12 @@ const stationAudioCache = new Map<string, { frequency: number; wpm: number }>();
 
 const message = ref('');
 const activeHuntersCount = ref(conversationAiService.getActiveStations().length);
+
+const { expectedText, hintLabel, onUserSend, onHunterMessage } = useQsoGuide(
+    props.parkCallsign ?? settings.callsign,
+    props.parkState ?? '',
+    message,
+)
 
 function onKeyerCharacter(char: string): void {
     message.value += char;
@@ -48,12 +60,15 @@ chatStore.messages.forEach((msg, index) => {
   if (msg.originator !== 'You') displayedText[index] = msg.message;
 });
 
-function animateMessage(index: number, fullText: string): void {
+function animateMessage(index: number, fullText: string, onComplete?: () => void): void {
   displayedText[index] = '';
   let charIndex = 0;
 
   function typeNext() {
-    if (charIndex >= fullText.length) return;
+    if (charIndex >= fullText.length) {
+      onComplete?.();
+      return;
+    }
     charIndex++;
     displayedText[index] = fullText.slice(0, charIndex);
     setTimeout(typeNext, 80 + Math.random() * 60);
@@ -70,7 +85,9 @@ watch(
     for (let i = lastAnimatedIndex + 1; i < newLength; i++) {
       const msg = chatStore.messages[i];
       if (msg && msg.originator !== 'You') {
-        animateMessage(i, msg.message);
+        animateMessage(i, msg.message, () => {
+          if (settings.guidedQsos) onHunterMessage(msg.originator);
+        });
         if (!stationAudioCache.has(msg.originator)) {
           const station = conversationAiService.getActiveStations().find(s => s.callsign === msg.originator);
           if (station) {
@@ -95,7 +112,9 @@ function normalizeProsigns(text: string): string {
 function sendMessage() {
   if (props.readonly) return;
   if (message.value.trim()) {
-    chatStore.addMessage('You', normalizeProsigns(message.value.trim()));
+    const raw = message.value.trim();
+    if (settings.guidedQsos) onUserSend(raw);
+    chatStore.addMessage('You', normalizeProsigns(raw));
     message.value = '';
   }
 }
@@ -158,7 +177,23 @@ watch(
       <span class="active-hunters">Active Hunters: {{ activeHuntersCount }}</span>
     </div>
     <div class="input-container" :class="{ 'input-container--disabled': readonly }">
-      <textarea v-model="message" class="chat-input" @input="message = message.toUpperCase()" placeholder="Type your message here..." @keydown.enter.prevent="sendMessage()" :disabled="readonly"></textarea>
+      <GuidedInput
+        v-if="settings.guidedQsos"
+        v-model="message"
+        :expected-text="expectedText"
+        :hint-label="hintLabel"
+        :readonly="readonly"
+        @send="sendMessage"
+      />
+      <textarea
+        v-else
+        v-model="message"
+        class="chat-input"
+        @input="message = message.toUpperCase()"
+        placeholder="Type your message here..."
+        @keydown.enter.prevent="sendMessage()"
+        :disabled="readonly"
+      ></textarea>
       <div class="send-button-container">
         <button class="send-button" @click="sendMessage()" :disabled="readonly">Send</button>
       </div>
