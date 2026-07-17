@@ -198,8 +198,9 @@ export class ConversationAiService {
 
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
-                const msg = hunter.park2parkID
-                    ? `<BK> TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} <BK>`
+                const parkRef = hunter.park2parkID?.replace(/^US-/, 'K') ?? null
+                const msg = parkRef
+                    ? `<BK> TU UR ${rst} ${rst} ${parkRef} ${parkRef} ${stateCode} ${stateCode} <BK>`
                     : `<BK> TU UR ${rst} ${rst} ${stateCode} ${stateCode} <BK>`;
                 this.sendHunterMessage(hunter, msg, true);
                 hunter.qsoStep = 'HUNTER_RST';

@@ -115,6 +115,7 @@ function formatDate(iso: string): string {
           :readonly="!!activation.endedAt"
           :park-callsign="activation.callsign"
           :park-state="activation.parkState ?? ''"
+          :park-reference="activation.parkReference ?? ''"
         />
       </div>
     </div>

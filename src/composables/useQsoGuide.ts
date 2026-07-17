@@ -20,11 +20,11 @@ function charMatches(typed: string, expected: string): boolean {
     return typed === expected || (expected === '9' && typed === 'N')
 }
 
-function buildResponseText(hunter: Station, activationState: string): string {
+function buildResponseText(hunter: Station, activationState: string, activationPark: string): string {
     const greeting = getGreeting()
     const state = activationState.toUpperCase()
     if (hunter.park2parkID) {
-        const park = hunter.park2parkID.replace('-', '')
+        const park = activationPark.replace(/^US-/, 'K')
         return `${hunter.callsign} TU ${greeting} UR 599 599 ${state} ${state} ${park} ${park} BK`
     }
     return `${hunter.callsign} TU ${greeting} UR 599 599 ${state} ${state} BK`
@@ -33,6 +33,7 @@ function buildResponseText(hunter: Station, activationState: string): string {
 export function useQsoGuide(
     activationCallsign: string,
     activationState: string,
+    activationPark: string,
     typedMessage: Ref<string>,
 ) {
     const phase = ref<GuidePhase>({ phase: 'cq' })
@@ -51,7 +52,7 @@ export function useQsoGuide(
             const matched = ai.getActiveStations().find(
                 s => s.callsign.toUpperCase() === firstWord && s.qsoStep === 'HUNTER_CALL',
             )
-            return matched ? buildResponseText(matched, activationState) : ''
+            return matched ? buildResponseText(matched, activationState, activationPark) : ''
         }
 
         if (p.phase === 'close') {

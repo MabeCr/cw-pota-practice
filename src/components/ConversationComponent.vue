@@ -12,6 +12,7 @@ const props = defineProps<{
     readonly?: boolean
     parkCallsign?: string
     parkState?: string
+    parkReference?: string
 }>()
 const settings = useSettingsStore()
 
@@ -29,6 +30,7 @@ const activeHuntersCount = ref(conversationAiService.getActiveStations().length)
 const { expectedText, hintLabel, onUserSend, onHunterMessage } = useQsoGuide(
     props.parkCallsign ?? settings.callsign,
     props.parkState ?? '',
+    props.parkReference ?? '',
     message,
 )
 
