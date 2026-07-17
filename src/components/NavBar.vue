@@ -14,6 +14,7 @@ const route = useRoute()
       <RouterLink to="/" :end="true">Home</RouterLink>
       <RouterLink to="/operation" :class="{ 'router-link-active': route.path.startsWith('/operation') }">Operation</RouterLink>
       <RouterLink to="/logbook">Logbook</RouterLink>
+      <RouterLink to="/exchange">Exchange</RouterLink>
       <RouterLink to="/preferences">Preferences</RouterLink>
     </div>
   </nav>
