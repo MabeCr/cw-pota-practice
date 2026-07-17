@@ -70,7 +70,7 @@ watch(() => props.modelValue, async () => {
 </script>
 
 <template>
-  <div class="guided-input-wrapper">
+  <div class="guided-input-wrapper" data-tutorial="guided-input">
     <div class="guide-hint-label">{{ hintLabel }}</div>
     <div
       ref="inputEl"

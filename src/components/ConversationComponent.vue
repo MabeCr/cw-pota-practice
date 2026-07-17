@@ -160,6 +160,7 @@ watch(
       class="chat-container"
       ref="chatContainer"
       :class="{ 'chat-container--blur': settings.chatVisibility === 'blur' }"
+      data-tutorial="chat-area"
     >
       <div
         v-for="(msg, index) in chatStore.messages"
@@ -201,7 +202,7 @@ watch(
       </div>
     </div>
 
-    <div class="volume-control">
+    <div class="volume-control" data-tutorial="volume-control">
       <button class="mute-button" @click="toggleMute" :title="isMuted ? 'Unmute' : 'Mute'">
         {{ isMuted ? '🔇' : '🔊' }}
       </button>

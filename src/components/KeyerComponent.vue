@@ -77,6 +77,7 @@ function onKeyUp(event: KeyboardEvent) {
     class="keyer-area"
     :class="{ focused: isFocused }"
     tabindex="0"
+    data-tutorial="keyer-area"
     @focus="onFocus"
     @blur="onBlur"
     @keydown="onKeyDown"

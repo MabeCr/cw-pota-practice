@@ -132,17 +132,17 @@ watch(() => props.qsoList.length, async () => {
 </script>
 
 <template>
-  <div class="log-container">
+  <div class="log-container" data-tutorial="log-container">
 
     <div class="log-header">
       <h2 class="log-title">QSO Log</h2>
-      <div class="activation-badge" :class="{ activated: isActivated }">
+      <div class="activation-badge" :class="{ activated: isActivated }" data-tutorial="activation-badge">
         <span v-if="!isActivated">{{ uniqueContactCount }}&thinsp;/&thinsp;10</span>
         <span v-else>✓ Activated</span>
       </div>
     </div>
 
-    <div class="table-wrapper" ref="tableContainer">
+    <div class="table-wrapper" ref="tableContainer" data-tutorial="log-table">
       <table class="qso-table">
         <thead>
           <tr>
@@ -190,7 +190,7 @@ watch(() => props.qsoList.length, async () => {
       </table>
     </div>
 
-    <div class="input-row" :class="{ 'input-row--disabled': readonly }">
+    <div class="input-row" :class="{ 'input-row--disabled': readonly }" data-tutorial="log-form">
       <div class="input-field">
         <label for="callsign">Callsign</label>
         <input

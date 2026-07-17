@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { useTutorialStore } from '@/stores/tutorialStore';
 
 const router = useRouter();
+const tutorial = useTutorialStore();
 
 function startActivating() {
   router.push('/operation');
+}
+
+function startTutorial() {
+  tutorial.start();
+  router.push('/');
 }
 </script>
 
@@ -68,9 +75,13 @@ function startActivating() {
         </div>
       </div>
 
-      <button class="start-button" @click="startActivating">
+      <button class="start-button" data-tutorial="landing-start-btn" @click="startActivating">
         Start Activating
         <span class="btn-arrow">→</span>
+      </button>
+
+      <button class="tutorial-button" @click="startTutorial">
+        {{ tutorial.completed ? 'Revisit the tutorial' : 'Show me how this works' }}
       </button>
 
     </div>
@@ -235,5 +246,22 @@ function startActivating() {
 
 .start-button:hover .btn-arrow {
   transform: translateX(3px);
+}
+
+.tutorial-button {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+
+.tutorial-button:hover {
+  color: var(--accent-text);
 }
 </style>
