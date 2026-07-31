@@ -37,6 +37,7 @@ function startTutorial() {
           <span class="dash"></span>
           <span class="letterspace"></span>
           <span class="dot"></span><span class="dash"></span>
+          <span class="morse-repeat">
           <span class="wordspace"></span>
           <!-- CQ -->
           <span class="dash"></span><span class="dot"></span><span class="dash"></span><span class="dot"></span>
@@ -51,9 +52,10 @@ function startTutorial() {
           <span class="dash"></span>
           <span class="letterspace"></span>
           <span class="dot"></span><span class="dash"></span>
+          </span>
         </div>
         <p class="landing-subtitle">
-          Simulate a POTA activation and work through a real CW pileup — at your own pace.
+          Simulate a POTA activation and work through a real CW pileup at your own pace.
         </p>
       </div>
 
@@ -142,6 +144,10 @@ function startTutorial() {
   justify-content: center;
   gap: 5px;
   margin: 0 auto;
+}
+
+.morse-repeat {
+  display: contents;
 }
 
 .dot {
@@ -293,8 +299,30 @@ function startTutorial() {
     padding: 20px 18px;
   }
 
+  .morse-repeat {
+    display: none;
+  }
+
   .morse-divider {
-    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .dash {
+    width: 15px;
+    height: 5px;
+  }
+
+  .letterspace {
+    width: 7px;
+  }
+
+  .wordspace {
+    width: 22px;
   }
 }
 </style>

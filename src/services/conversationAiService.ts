@@ -168,7 +168,7 @@ export class ConversationAiService {
         this.inQsoWithCallsign = null;
 
         if (this.tutorialMode) {
-            // Always exactly one hunter: W1AW
+            // Always exactly one hunter: N9MET
             if (this.activeStationList.value.length === 0) {
                 this.activeStationList.value.push(this.createHunter());
             }
@@ -368,7 +368,7 @@ export class ConversationAiService {
         if (this.tutorialMode) {
             const isSecond = this.tutorialQsoCount > 0
             return {
-                callsign: isSecond ? 'KM4BE' : 'W1AW',
+                callsign: isSecond ? 'KM4BE' : 'N9MET',
                 state: { code: 'OH', name: 'Ohio' },
                 park2parkID: isSecond ? 'US-1964' : null,
                 qsoStep: 'CQ',
