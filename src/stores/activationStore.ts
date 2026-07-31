@@ -9,8 +9,12 @@ function normalizeRst(s: string): string {
     return s.toUpperCase().replace(/N/g, '9')
 }
 
-function normalizePark(s: string): string {
-    return s.toUpperCase().replace(/-/g, '')
+function normalizePark(ref: string): string {
+    const upper = ref.trim().toUpperCase()
+    if (upper.startsWith('US-')) return upper
+    if (upper.startsWith('K-')) return `US-${upper.slice(2)}`
+    if (/^K\d/.test(upper)) return `US-${upper.slice(1)}`
+    return upper
 }
 
 function findGroundTruth(activation: Activation, callsign: string): GroundTruthEntry | undefined {
