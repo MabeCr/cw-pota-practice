@@ -35,6 +35,11 @@ const { expectedText, hintLabel, onUserSend, onHunterMessage } = useQsoGuide(
 )
 
 function onKeyerCharacter(char: string): void {
+    // Drop a leading space: the keyer's inter-word timer can fire after the user
+    // presses Enter to send (focus stays on the keyer, so cleanup() is not called).
+    // That trailing word-space lands on the now-empty buffer and shifts every
+    // subsequent character one position, making the guide show red incorrectly.
+    if (char === ' ' && !message.value) return;
     message.value += char;
 }
 
