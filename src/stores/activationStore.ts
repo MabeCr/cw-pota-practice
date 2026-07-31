@@ -44,6 +44,21 @@ function annotateQso(activation: Activation, qso: QSO): QSO {
     return { ...qso, correct: activation.endedAt ? isCorrect : null }
 }
 
+// crypto.randomUUID() requires a secure context (HTTPS/localhost).
+// When the dev server is accessed via a LAN IP over plain HTTP, fall back
+// to a UUID v4 built from getRandomValues(), which has no such restriction.
+function generateId(): string {
+    if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+    }
+    const b = new Uint8Array(16)
+    crypto.getRandomValues(b)
+    b[6] = (b[6] & 0x0f) | 0x40
+    b[8] = (b[8] & 0x3f) | 0x80
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`
+}
+
 const STORAGE_KEY = 'cw-pota-activations'
 
 function load(): Activation[] {
@@ -73,7 +88,7 @@ export const useActivationStore = defineStore('activations', {
     },
     actions: {
         createActivation(parkReference: string, parkName: string, callsign: string, parkState?: string): string {
-            const id = crypto.randomUUID()
+            const id = generateId()
             this.activations.push({
                 id,
                 parkReference,

@@ -776,4 +776,55 @@ function saveEdit(fields: { parkReference: string; parkName: string; parkState: 
 .lookup-rst       { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
 .lookup-rst-label { font-weight: 700; color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .lookup-rst-sep   { margin: 0 5px; color: var(--border-default); }
+
+/* ── Mobile layout ───────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .logbook-root {
+    flex-direction: column;
+    height: auto;
+    min-height: 100%;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .activation-panel {
+    padding: 14px 12px;
+    flex: none;
+  }
+
+  .lookup-panel {
+    flex: none;
+    min-height: auto;
+    min-width: 0;
+  }
+
+  /* Table scrolls horizontally so columns aren't crushed */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .logbook-table {
+    min-width: 520px;
+  }
+
+  /* Heatmaps stack vertically — each gets the full width */
+  .heatmaps-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* With full width, 8 columns give readable ~36px tiles */
+  .state-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+
+  .state-tile {
+    font-size: 0.66rem;
+    border-radius: 4px;
+    aspect-ratio: 1;
+  }
+}
 </style>

@@ -111,4 +111,32 @@ function onStart(parkReference: string, parkName: string, callsign: string, park
 .start-btn:active {
   transform: translateY(0);
 }
+
+@media (max-width: 768px) {
+  .landing {
+    align-items: flex-start;
+    padding: 32px 20px;
+    /* allow scrolling if content is taller than viewport */
+    min-height: 100%;
+    height: auto;
+    justify-content: flex-start;
+  }
+
+  .hero {
+    max-width: 100%;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+  }
+
+  .start-btn {
+    width: 100%;
+    padding: 16px 24px;
+  }
+}
 </style>

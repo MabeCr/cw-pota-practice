@@ -103,8 +103,10 @@ function formatDate(iso: string): string {
         <span class="park-name">{{ activation.parkName }}</span>
         <span class="bar-sep">·</span>
         <span class="bar-callsign">{{ activation.callsign }}</span>
-        <span class="bar-sep">·</span>
-        <span class="bar-date">{{ formatDate(activation.startedAt) }}</span>
+        <span class="bar-date-group">
+          <span class="bar-sep">·</span>
+          <span class="bar-date">{{ formatDate(activation.startedAt) }}</span>
+        </span>
         <span v-if="activation.endedAt" class="badge-ended">Ended</span>
         <button class="edit-btn" @click="editDialogOpen = true" title="Edit activation info" data-tutorial="edit-btn">✎</button>
       </div>
@@ -315,6 +317,46 @@ function formatDate(iso: string): string {
 }
 
 @media (max-width: 768px) {
+  /* ── Compact activation bar ───────────────────────────────────── */
+
+  .activation-bar {
+    padding: 5px 10px;
+    gap: 6px;
+  }
+
+  .activation-info {
+    flex-wrap: nowrap;
+    font-size: 0.78rem;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* Truncate long park names so the bar stays one line */
+  .park-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+
+  /* Hide the date — it's available in the logbook */
+  .bar-date-group {
+    display: none;
+  }
+
+  .toggle-btn {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+
+  .ended-banner {
+    padding: 3px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* ── Mobile tab bar ───────────────────────────────────────────── */
+
   .mobile-tab-bar {
     display: flex;
     flex-shrink: 0;
