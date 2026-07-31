@@ -95,16 +95,18 @@
           POTA CW uses the three-digit <strong>RST system</strong> to report readability, strength, and tone.
           Each digit has its own scale:
         </p>
-        <table class="ref-table">
-          <thead>
-            <tr><th>Digit</th><th>Meaning</th><th>Scale</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><strong>R</strong> (Readability)</td><td>How clearly can you copy the signal?</td><td>1 (unreadable) to 5 (perfectly readable)</td></tr>
-            <tr><td><strong>S</strong> (Strength)</td><td>How strong is the signal?</td><td>1 (faint) to 9 (extremely strong)</td></tr>
-            <tr><td><strong>T</strong> (Tone)</td><td>How clean is the CW note?</td><td>1 (very rough) to 9 (pure, clean tone)</td></tr>
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="ref-table">
+            <thead>
+              <tr><th>Digit</th><th>Meaning</th><th>Scale</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>R</strong> (Readability)</td><td>How clearly can you copy the signal?</td><td>1 (unreadable) to 5 (perfectly readable)</td></tr>
+              <tr><td><strong>S</strong> (Strength)</td><td>How strong is the signal?</td><td>1 (faint) to 9 (extremely strong)</td></tr>
+              <tr><td><strong>T</strong> (Tone)</td><td>How clean is the CW note?</td><td>1 (very rough) to 9 (pure, clean tone)</td></tr>
+            </tbody>
+          </table>
+        </div>
         <p class="card-body">
           You will also hear operators send <strong>5NN</strong> instead of 599. In CW shorthand, N is
           used in place of 9 because it is faster to key. So 5NN and 599 mean exactly the same thing.
@@ -151,20 +153,22 @@
       <!-- Quick Reference -->
       <section class="card">
         <h2 class="card-heading">Quick Reference</h2>
-        <table class="ref-table">
-          <thead>
-            <tr><th>Abbreviation</th><th>Meaning</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>CQ</code></td><td>A general call inviting any station to reply</td></tr>
-            <tr><td><code>DE</code></td><td>Means "from" and precedes the sender's callsign</td></tr>
-            <tr><td><code>K</code></td><td>Go ahead, invitation to transmit</td></tr>
-            <tr><td><code>BK</code></td><td>Back to you, passing the transmission back</td></tr>
-            <tr><td><code>TU</code></td><td>Thank you, used to confirm the contact</td></tr>
-            <tr><td><code>P2P</code></td><td>Park-to-Park, meaning both stations are activating a park</td></tr>
-            <tr><td><em>State/Province</em></td><td>Two-letter abbreviation for the park's location, such as OH, CA, or TX</td></tr>
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="ref-table">
+            <thead>
+              <tr><th>Abbreviation</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>CQ</code></td><td>A general call inviting any station to reply</td></tr>
+              <tr><td><code>DE</code></td><td>Means "from" and precedes the sender's callsign</td></tr>
+              <tr><td><code>K</code></td><td>Go ahead, invitation to transmit</td></tr>
+              <tr><td><code>BK</code></td><td>Back to you, passing the transmission back</td></tr>
+              <tr><td><code>TU</code></td><td>Thank you, used to confirm the contact</td></tr>
+              <tr><td><code>P2P</code></td><td>Park-to-Park, meaning both stations are activating a park</td></tr>
+              <tr><td><em>State/Province</em></td><td>Two-letter abbreviation for the park's location, such as OH, CA, or TX</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
     </div>
@@ -342,6 +346,11 @@
 }
 
 /* ── Tables ── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .ref-table {
   width: 100%;
   border-collapse: collapse;
@@ -390,5 +399,26 @@
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--accent-text);
+}
+
+/* ── Mobile overrides ── */
+@media (max-width: 768px) {
+  .exchange-container {
+    padding: 20px 16px;
+  }
+
+  .card {
+    padding: 20px 16px;
+  }
+
+  /* RST table has 3 columns with long text — give it a min-width so it scrolls */
+  .ref-table {
+    min-width: 480px;
+  }
+
+  .cw {
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
 }
 </style>

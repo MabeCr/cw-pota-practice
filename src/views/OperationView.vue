@@ -403,7 +403,10 @@ function formatDate(iso: string): string {
     overflow-y: auto;
   }
 
-  /* Radio (right-half) first, Log (left-half) second */
+  /* Panel order on mobile: Radio first, Log second.
+     IMPORTANT: any new panel added to .app-container must get an explicit
+     order value here, because the default (order: 0) would place it before
+     the Radio panel, which is wrong. */
   .right-half {
     order: 1;
   }
