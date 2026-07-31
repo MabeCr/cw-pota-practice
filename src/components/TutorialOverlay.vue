@@ -204,7 +204,7 @@ function handleNext() {
       <div class="tutorial-dimmer" />
       <div class="tutorial-tooltip mobile-notice">
         <p class="mobile-notice-text">The tutorial is only available on desktop. Use a larger screen for the full guided walkthrough.</p>
-        <button class="tutorial-btn tutorial-btn--next" @click="tutorial.stop()">Got it</button>
+        <button class="tutorial-btn tutorial-btn--next" @click="tutorial.finish()">Got it</button>
       </div>
     </template>
 
