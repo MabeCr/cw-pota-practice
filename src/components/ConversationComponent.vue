@@ -35,6 +35,11 @@ const { expectedText, hintLabel, onUserSend, onHunterMessage } = useQsoGuide(
 )
 
 function onKeyerCharacter(char: string): void {
+    // Drop a leading space: the keyer's inter-word timer can fire after the user
+    // presses Enter to send (focus stays on the keyer, so cleanup() is not called).
+    // That trailing word-space lands on the now-empty buffer and shifts every
+    // subsequent character one position, making the guide show red incorrectly.
+    if (char === ' ' && !message.value) return;
     message.value += char;
 }
 
@@ -403,5 +408,29 @@ watch(
   flex: 1;
   cursor: pointer;
   accent-color: var(--accent);
+}
+
+/* ── Mobile overrides ────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .conversation-input-container {
+    height: 100%;
+    padding-top: 12px;
+  }
+
+  .chat-header,
+  .chat-container,
+  .chat-hidden-placeholder,
+  .chat-input,
+  .volume-control,
+  .qso-status-header {
+    width: 95%;
+    max-width: 95%;
+  }
+
+  .send-button {
+    padding: 13px 28px;
+    font-size: 1rem;
+  }
 }
 </style>

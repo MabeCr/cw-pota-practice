@@ -145,7 +145,7 @@ export function useMorse() {
                         continue;
                     }
                 }
-                tokens.push(word[i]);
+                tokens.push(word[i]!);
                 i++;
             }
             return tokens;

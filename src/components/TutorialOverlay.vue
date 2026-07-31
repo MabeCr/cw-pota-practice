@@ -3,9 +3,11 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTutorialStore, STEP_AWAIT_ROUTES, STEP_AWAIT_ACTIONS, STEP_COUNT } from '@/stores/tutorialStore'
 import { TUTORIAL_STEPS } from '@/composables/useTutorialSteps'
+import { useMobileDetect } from '@/composables/useMobileDetect'
 
 const tutorial = useTutorialStore()
 const router   = useRouter()
+const { isMobile } = useMobileDetect()
 
 const spotlightRect  = ref<DOMRect | null>(null)
 const tooltipVisible = ref(true)   // hidden while waiting for a targeted element to mount
@@ -197,7 +199,16 @@ function handleNext() {
 
 <template>
   <Teleport to="body">
-    <template v-if="tutorial.isActive && step">
+    <!-- Mobile: show a simple notice instead of the full overlay -->
+    <template v-if="tutorial.isActive && isMobile">
+      <div class="tutorial-dimmer" />
+      <div class="tutorial-tooltip mobile-notice">
+        <p class="mobile-notice-text">The tutorial is only available on desktop. Use a larger screen for the full guided walkthrough.</p>
+        <button class="tutorial-btn tutorial-btn--next" @click="tutorial.stop()">Got it</button>
+      </div>
+    </template>
+
+    <template v-else-if="tutorial.isActive && step">
 
       <!-- Dark backdrop + spotlight (only when a target is specified) -->
       <div
@@ -368,5 +379,25 @@ function handleNext() {
 .tutorial-btn--next:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.mobile-notice {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(340px, 88vw);
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+}
+
+.mobile-notice-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
 }
 </style>

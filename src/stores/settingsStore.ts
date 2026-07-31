@@ -4,6 +4,7 @@ import type { QsoValidationMode } from '@/types/activation';
 export type KeyerType = 'straight' | 'iambic-a' | 'iambic-b';
 export type ChatVisibility = 'show' | 'blur' | 'hide';
 export type AppTheme = 'light' | 'dark' | 'warm';
+export type MobileInputMethod = 'on-screen' | 'keyboard';
 export type { QsoValidationMode };
 
 const STORAGE_KEY = 'cw-pota-settings';
@@ -36,8 +37,9 @@ function defaultState() {
         keyerType:      (saved.keyerType      as KeyerType)      ?? 'iambic-a' as KeyerType,
         chatVisibility:  (saved.chatVisibility  as ChatVisibility)      ?? 'show'  as ChatVisibility,
         qsoValidation:   (saved.qsoValidation   as QsoValidationMode)   ?? 'none'  as QsoValidationMode,
-        theme:           (saved.theme           as AppTheme)            ?? 'light' as AppTheme,
-        guidedQsos:      (saved.guidedQsos      as boolean)             ?? false,
+        theme:              (saved.theme              as AppTheme)          ?? 'light' as AppTheme,
+        guidedQsos:         (saved.guidedQsos         as boolean)           ?? false,
+        mobileInputMethod:  (saved.mobileInputMethod  as MobileInputMethod) ?? 'on-screen' as MobileInputMethod,
     };
 }
 
@@ -98,6 +100,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setGuidedQsos(value: boolean) {
             this.guidedQsos = value;
+            saveToStorage(this.$state);
+        },
+        setMobileInputMethod(value: MobileInputMethod) {
+            this.mobileInputMethod = value;
             saveToStorage(this.$state);
         },
     },
