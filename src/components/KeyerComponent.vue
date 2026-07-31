@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useKeyer } from '@/composables/useKeyer';
 import { keyLabel } from '@/utils/keyLabel';
+import { useMobileDetect } from '@/composables/useMobileDetect';
 
 const emit = defineEmits<{
     character:    [char: string];
@@ -11,6 +12,11 @@ const emit = defineEmits<{
 }>();
 
 const settings = useSettingsStore();
+const { isMobile } = useMobileDetect();
+
+const showOnScreenKeys = computed(() =>
+    isMobile.value && settings.mobileInputMethod === 'on-screen'
+);
 const {
     onDitDown, onDitUp, onDahDown, onDahUp, cleanup,
     isDitPressed, isDahPressed,
@@ -73,7 +79,35 @@ function onKeyUp(event: KeyboardEvent) {
 </script>
 
 <template>
+  <!-- On-screen paddle buttons (mobile, on-screen mode) -->
+  <div v-if="showOnScreenKeys" class="on-screen-keyer" data-tutorial="keyer-area">
+    <button
+      class="paddle-btn dit-btn"
+      :class="{ lit: isDitPressed }"
+      @pointerdown.prevent="onDitDown"
+      @pointerup.prevent="onDitUp"
+      @pointerleave="onDitUp"
+      @pointercancel="onDitUp"
+    >
+      <span class="paddle-label">{{ ditLabel }}</span>
+      <span class="paddle-sub">·</span>
+    </button>
+    <button
+      class="paddle-btn dah-btn"
+      :class="{ lit: isDahPressed }"
+      @pointerdown.prevent="onDahDown"
+      @pointerup.prevent="onDahUp"
+      @pointerleave="onDahUp"
+      @pointercancel="onDahUp"
+    >
+      <span class="paddle-label">{{ dahLabel }}</span>
+      <span class="paddle-sub">− − −</span>
+    </button>
+  </div>
+
+  <!-- Keyboard keyer (desktop or mobile keyboard mode) -->
   <div
+    v-else
     class="keyer-area"
     :class="{ focused: isFocused }"
     tabindex="0"
@@ -197,6 +231,62 @@ function onKeyUp(event: KeyboardEvent) {
 }
 
 .key-square.lit .key-binding {
+  color: #fff;
+}
+
+/* ── On-screen paddle buttons ─────────────────────────────────── */
+
+.on-screen-keyer {
+  display: flex;
+  width: 80%;
+  gap: 12px;
+  margin-top: 12px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.paddle-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 88px;
+  border: 2px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-surface-alt);
+  cursor: pointer;
+  transition: background-color 0.04s, border-color 0.04s, transform 0.04s;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.paddle-btn:active,
+.paddle-btn.lit {
+  background: var(--accent);
+  border-color: var(--accent-hover);
+  transform: scale(0.97);
+}
+
+.paddle-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.paddle-sub {
+  font-size: 1.25rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+
+.paddle-btn.lit .paddle-label,
+.paddle-btn.lit .paddle-sub {
   color: #fff;
 }
 </style>

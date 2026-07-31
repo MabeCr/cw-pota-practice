@@ -3,7 +3,7 @@ import { ref, onUnmounted } from 'vue';
 import { keyLabel } from '@/utils/keyLabel';
 import { useMorse, setNoiseLevel } from '@/composables/useMorse';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { KeyerType, ChatVisibility, QsoValidationMode, AppTheme } from '@/stores/settingsStore';
+import type { KeyerType, ChatVisibility, QsoValidationMode, AppTheme, MobileInputMethod } from '@/stores/settingsStore';
 
 const themeOptions: { value: AppTheme; label: string; title: string }[] = [
     { value: 'light', label: 'Light', title: 'Clean white interface' },
@@ -178,6 +178,24 @@ onUnmounted(() => {
             >
               {{ bindingCapture === 'dah' ? 'Press any key…' : keyLabel(settings.dahKey) }}
             </button>
+          </div>
+
+          <div class="pref-row">
+            <label class="pref-label">Mobile Keyer</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: settings.mobileInputMethod === 'on-screen' }"
+                title="Show on-screen Dit/Dah buttons for touchscreen keying"
+                @click="settings.setMobileInputMethod('on-screen' as MobileInputMethod)"
+              >On-Screen</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.mobileInputMethod === 'keyboard' }"
+                title="Use a physical keyer or keyboard adapter plugged into the phone"
+                @click="settings.setMobileInputMethod('keyboard' as MobileInputMethod)"
+              >Keyboard</button>
+            </div>
           </div>
         </section>
 

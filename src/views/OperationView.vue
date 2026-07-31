@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoute, useRouter } from 'vue-router'
 import LogComponent from '@/components/LogComponent.vue'
@@ -60,6 +60,28 @@ function toggleActivation() {
 
 const editDialogOpen = ref(false)
 
+// ── Mobile swipeable panels ───────────────────────────────────────────────────
+
+const panelsEl   = ref<HTMLElement | null>(null)
+const activePanel = ref(0)   // 0 = Radio, 1 = Log
+
+function onPanelScroll() {
+    const el = panelsEl.value
+    if (!el) return
+    activePanel.value = Math.round(el.scrollLeft / el.clientWidth)
+}
+
+function scrollToPanel(idx: number) {
+    const el = panelsEl.value
+    if (!el) return
+    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' })
+}
+
+onMounted(() => {
+    // Start on the Radio panel (right-half, visually first on mobile via CSS order)
+    panelsEl.value?.scrollTo({ left: 0, behavior: 'instant' })
+})
+
 function onSaveEdit(fields: { parkReference: string; parkName: string; parkState: string; callsign: string }) {
     activationStore.updateActivation(activationId, fields)
     editDialogOpen.value = false
@@ -100,8 +122,27 @@ function formatDate(iso: string): string {
       Activation ended — Log and Send are disabled.
     </div>
 
-    <div class="app-container">
-      <div class="left-half">
+    <!-- Mobile tab bar (hidden on desktop via CSS) -->
+    <nav class="mobile-tab-bar">
+      <button
+        class="mobile-tab"
+        :class="{ active: activePanel === 0 }"
+        @click="scrollToPanel(0)"
+      >Radio</button>
+      <button
+        class="mobile-tab"
+        :class="{ active: activePanel === 1 }"
+        @click="scrollToPanel(1)"
+      >Log</button>
+    </nav>
+
+    <div
+      class="app-container"
+      ref="panelsEl"
+      @scroll.passive="onPanelScroll"
+    >
+      <!-- On mobile: right-half (Radio) comes first via CSS order -->
+      <div class="left-half" data-tutorial="log-container">
         <LogComponent
           :qso-list="activation.qsoList"
           :validation-mode="activation.validationMode"
@@ -265,5 +306,68 @@ function formatDate(iso: string): string {
 .right-half {
   flex: 1;
   overflow: hidden;
+}
+
+/* ── Mobile layout ───────────────────────────────────────────────── */
+
+.mobile-tab-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    background: var(--bg-surface-alt);
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  .mobile-tab {
+    flex: 1;
+    padding: 10px 0;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .mobile-tab.active {
+    color: var(--accent-text);
+    border-bottom-color: var(--accent);
+  }
+
+  .app-container {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Hide the scrollbar on mobile */
+    scrollbar-width: none;
+  }
+
+  .app-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .left-half,
+  .right-half {
+    flex: 0 0 100%;
+    min-width: 100%;
+    scroll-snap-align: start;
+    overflow-y: auto;
+  }
+
+  /* Radio (right-half) first, Log (left-half) second */
+  .right-half {
+    order: 1;
+  }
+
+  .left-half {
+    order: 2;
+  }
 }
 </style>
