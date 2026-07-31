@@ -547,4 +547,37 @@ onUnmounted(() => {
   color: #fff;
   font-weight: 600;
 }
+
+@media (max-width: 768px) {
+  .preferences-container {
+    padding: 20px 16px;
+  }
+
+  .pref-section {
+    padding: 18px 16px;
+  }
+
+  .pref-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .pref-label {
+    width: auto;
+  }
+
+  .range-row {
+    width: 100%;
+  }
+
+  .segment-group {
+    width: 100%;
+  }
+
+  .pref-input {
+    width: 100%;
+    max-width: 220px;
+  }
+}
 </style>

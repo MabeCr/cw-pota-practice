@@ -67,8 +67,8 @@ function handleStart() {
 </script>
 
 <template>
-  <div class="overlay" @click.self="emit('cancel')">
-    <div class="dialog" data-tutorial="new-activation-dialog">
+  <div class="overlay" @click="emit('cancel')">
+    <div class="dialog" data-tutorial="new-activation-dialog" @click.stop>
       <h2 class="dialog-title">New Activation</h2>
 
       <div class="field">
@@ -157,6 +157,8 @@ function handleStart() {
   padding: 32px 36px 28px;
   width: 420px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -306,6 +308,7 @@ function handleStart() {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  touch-action: manipulation;
 }
 
 .btn-start:hover:not(:disabled) {
@@ -315,5 +318,26 @@ function handleStart() {
 .btn-start:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .dialog {
+    padding: 24px 20px 20px;
+    width: 100%;
+    max-width: 95vw;
+    border-radius: 12px;
+  }
+
+  .btn-cancel,
+  .btn-start {
+    padding: 12px 20px;
+    font-size: 1rem;
+    flex: 1;
+    text-align: center;
+  }
+
+  .dialog-actions {
+    gap: 8px;
+  }
 }
 </style>

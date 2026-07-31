@@ -264,4 +264,37 @@ function startTutorial() {
 .tutorial-button:hover {
   color: var(--accent-text);
 }
+
+@media (max-width: 768px) {
+  .landing-container {
+    padding: 24px 16px;
+    align-items: flex-start;
+  }
+
+  .hero {
+    margin-bottom: 28px;
+  }
+
+  .landing-title {
+    font-size: 2.4rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1rem;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .feature-card {
+    padding: 20px 18px;
+  }
+
+  .morse-divider {
+    flex-wrap: wrap;
+  }
+}
 </style>
