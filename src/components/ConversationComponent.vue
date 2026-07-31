@@ -409,4 +409,28 @@ watch(
   cursor: pointer;
   accent-color: var(--accent);
 }
+
+/* ── Mobile overrides ────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .conversation-input-container {
+    height: 100%;
+    padding-top: 12px;
+  }
+
+  .chat-header,
+  .chat-container,
+  .chat-hidden-placeholder,
+  .chat-input,
+  .volume-control,
+  .qso-status-header {
+    width: 95%;
+    max-width: 95%;
+  }
+
+  .send-button {
+    padding: 13px 28px;
+    font-size: 1rem;
+  }
+}
 </style>
