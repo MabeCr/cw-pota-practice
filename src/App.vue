@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import NavBar from '@/components/NavBar.vue';
+import TutorialOverlay from '@/components/TutorialOverlay.vue';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 const settings = useSettingsStore();
@@ -16,6 +17,7 @@ watch(() => settings.theme, (theme) => {
     <main class="app-content">
       <RouterView />
     </main>
+    <TutorialOverlay />
   </div>
 </template>
 

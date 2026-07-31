@@ -84,12 +84,13 @@ function formatDate(iso: string): string {
         <span class="bar-sep">·</span>
         <span class="bar-date">{{ formatDate(activation.startedAt) }}</span>
         <span v-if="activation.endedAt" class="badge-ended">Ended</span>
-        <button class="edit-btn" @click="editDialogOpen = true" title="Edit activation info">✎</button>
+        <button class="edit-btn" @click="editDialogOpen = true" title="Edit activation info" data-tutorial="edit-btn">✎</button>
       </div>
       <button
         class="toggle-btn"
         :class="activation.endedAt ? 'btn-reopen' : 'btn-end'"
         @click="toggleActivation"
+        data-tutorial="toggle-activation-btn"
       >
         {{ activation.endedAt ? 'Reopen Activation' : 'End Activation' }}
       </button>
@@ -110,8 +111,13 @@ function formatDate(iso: string): string {
           @delete-qso="onDeleteQso"
         />
       </div>
-      <div class="right-half">
-        <ConversationComponent :readonly="!!activation.endedAt" />
+      <div class="right-half" data-tutorial="conversation-area">
+        <ConversationComponent
+          :readonly="!!activation.endedAt"
+          :park-callsign="activation.callsign"
+          :park-state="activation.parkState ?? ''"
+          :park-reference="activation.parkReference ?? ''"
+        />
       </div>
     </div>
 

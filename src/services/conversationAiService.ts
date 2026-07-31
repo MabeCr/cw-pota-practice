@@ -18,6 +18,22 @@ export class ConversationAiService {
     private hunterLastMessage = new Map<string, string>();
     private lastActivationId: string | null = null;
     private lastProcessedLength = 0;
+    private tutorialMode = false;
+    private tutorialQsoCount = 0;
+
+    enableTutorialMode(): void {
+        this.tutorialMode = true;
+        this.tutorialQsoCount = 0;
+        this.activeStationList.value = [];
+        this.inQsoWithCallsign = null;
+    }
+
+    disableTutorialMode(): void {
+        this.tutorialMode = false;
+        this.tutorialQsoCount = 0;
+        this.activeStationList.value = [];
+        this.inQsoWithCallsign = null;
+    }
 
     constructor() {
         _scope.run(() => { this.setupWatcher(); });
@@ -151,6 +167,18 @@ export class ConversationAiService {
     private async handleCQ(): Promise<void> {
         this.inQsoWithCallsign = null;
 
+        if (this.tutorialMode) {
+            // Always exactly one hunter: W1AW
+            if (this.activeStationList.value.length === 0) {
+                this.activeStationList.value.push(this.createHunter());
+            }
+            for (const hunter of this.activeStationList.value) {
+                hunter.qsoStep = 'CQ';
+                void this.hunterCallIn(hunter);
+            }
+            return;
+        }
+
         // Top up to hunterCount — existing hunters persist until they complete a QSO
         const needed = useSettingsStore().hunterCount - this.activeStationList.value.length;
         for (let i = 0; i < needed; i++) {
@@ -198,8 +226,9 @@ export class ConversationAiService {
 
                 const rst = this.generateRST();
                 const stateCode = hunter.state.code.toUpperCase();
-                const msg = hunter.park2parkID
-                    ? `<BK> TU UR ${rst} ${rst} ${hunter.park2parkID.replace('-', '')} ${hunter.park2parkID.replace('-', '')} ${stateCode} ${stateCode} <BK>`
+                const parkRef = hunter.park2parkID?.replace(/^US-/, 'K') ?? null
+                const msg = parkRef
+                    ? `<BK> TU UR ${rst} ${rst} ${parkRef} ${parkRef} ${stateCode} ${stateCode} <BK>`
                     : `<BK> TU UR ${rst} ${rst} ${stateCode} ${stateCode} <BK>`;
                 this.sendHunterMessage(hunter, msg, true);
                 hunter.qsoStep = 'HUNTER_RST';
@@ -243,6 +272,7 @@ export class ConversationAiService {
 
             this.sendHunterMessage(hunter, 'EE');
             hunter.qsoStep = 'HUNTER_FINISH';
+            if (this.tutorialMode) this.tutorialQsoCount++;
 
             const remaining = this.activeStationList.value.filter(s => s.callsign !== hunter.callsign);
             this.activeStationList.value = remaining;
@@ -318,6 +348,7 @@ export class ConversationAiService {
     }
 
     private generateRST(): string {
+        if (this.tutorialMode) return '5NN';
         const sOptions = [5, 7, 8, 9, 9, 9];
         const tOptions = [7, 7, 9, 9];
         const s = sOptions[Math.floor(Math.random() * sOptions.length)]!;
@@ -327,11 +358,24 @@ export class ConversationAiService {
     }
 
     private async randomDelay(): Promise<void> {
-        const ms = Math.random() * 1000 + 1000;
+        const ms = this.tutorialMode
+            ? 500 + Math.random() * 400
+            : Math.random() * 1000 + 1000;
         await new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private createHunter(callsign?: string): Station {
+        if (this.tutorialMode) {
+            const isSecond = this.tutorialQsoCount > 0
+            return {
+                callsign: isSecond ? 'KM4BE' : 'W1AW',
+                state: { code: 'OH', name: 'Ohio' },
+                park2parkID: isSecond ? 'US-1964' : null,
+                qsoStep: 'CQ',
+                frequency: 700,
+                wpm: 15,
+            };
+        }
         const state = US_STATES[Math.floor(Math.random() * US_STATES.length)] ?? { code: 'OH', name: 'Ohio' };
         const frequency = Math.floor(Math.random() * 401) + 400;
         const maxWpm = useSettingsStore().hunterMaxWpm;

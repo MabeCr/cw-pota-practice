@@ -37,6 +37,7 @@ function defaultState() {
         chatVisibility:  (saved.chatVisibility  as ChatVisibility)      ?? 'show'  as ChatVisibility,
         qsoValidation:   (saved.qsoValidation   as QsoValidationMode)   ?? 'none'  as QsoValidationMode,
         theme:           (saved.theme           as AppTheme)            ?? 'light' as AppTheme,
+        guidedQsos:      (saved.guidedQsos      as boolean)             ?? false,
     };
 }
 
@@ -93,6 +94,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setTheme(value: AppTheme) {
             this.theme = value;
+            saveToStorage(this.$state);
+        },
+        setGuidedQsos(value: boolean) {
+            this.guidedQsos = value;
             saveToStorage(this.$state);
         },
     },

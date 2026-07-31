@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NewActivationDialog from '@/components/NewActivationDialog.vue'
 import { useActivationStore } from '@/stores/activationStore'
+import { useTutorialStore } from '@/stores/tutorialStore'
 
 const router = useRouter()
 const activationStore = useActivationStore()
+const tutorial = useTutorialStore()
 const showDialog = ref(false)
+
+// Tutorial signals us to open the dialog automatically
+watch(() => tutorial.shouldOpenNewActivationDialog, (should) => {
+    if (should) {
+        showDialog.value = true
+        tutorial.shouldOpenNewActivationDialog = false
+    }
+}, { immediate: true })
 
 // If an activation is already in progress, go straight back to it
 const active = activationStore.inProgress[0]
@@ -30,7 +40,7 @@ function onStart(parkReference: string, parkName: string, callsign: string, park
         Select a park, set your callsign, and start logging contacts.<br />
         Each activation is saved to your logbook automatically.
       </p>
-      <button class="start-btn" @click="showDialog = true">
+      <button class="start-btn" data-tutorial="new-activation-btn" @click="showDialog = true">
         Start New Activation
       </button>
     </div>

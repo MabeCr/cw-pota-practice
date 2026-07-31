@@ -8,12 +8,15 @@ import {
     type ParkEntry,
 } from '@/composables/usePotaParks'
 
+import { useTutorialStore } from '@/stores/tutorialStore'
+
 const emit = defineEmits<{
     start: [parkReference: string, parkName: string, callsign: string, parkState: string]
     cancel: []
 }>()
 
 const settings = useSettingsStore()
+const tutorial = useTutorialStore()
 
 const parkQuery    = ref('')
 const parkState    = ref('')
@@ -49,6 +52,7 @@ function selectPark(park: ParkEntry) {
     parkQuery.value = `${park.reference} — ${park.name}`
     parkState.value = park.states[0] ?? ''
     results.value = []
+    tutorial.notifyAction('park-selected')
 }
 
 const canStart = computed(() => parkQuery.value.trim().length > 0 && callsign.value.trim().length > 0)
@@ -64,7 +68,7 @@ function handleStart() {
 
 <template>
   <div class="overlay" @click.self="emit('cancel')">
-    <div class="dialog">
+    <div class="dialog" data-tutorial="new-activation-dialog">
       <h2 class="dialog-title">New Activation</h2>
 
       <div class="field">
@@ -77,12 +81,14 @@ function handleStart() {
             placeholder="US-1234 or Park Name…"
             autocomplete="off"
             spellcheck="false"
+            data-tutorial="park-search"
           />
           <ul v-if="results.length" class="results-list">
             <li
               v-for="park in results"
               :key="park.reference"
               class="result-item"
+              data-tutorial="park-result"
               @click="selectPark(park)"
             >
               <span class="result-ref">{{ park.reference }}</span>
@@ -102,19 +108,21 @@ function handleStart() {
           class="field-input"
           type="text"
           placeholder="N0CALL"
+          data-tutorial="callsign-input"
           autocomplete="off"
           spellcheck="false"
           @input="callsign = callsign.toUpperCase()"
         />
       </div>
 
-      <div class="field">
+      <div class="field" data-tutorial="state-field">
         <label class="field-label">Park State <span class="field-optional">(2-letter code)</span></label>
         <input
           v-model="parkState"
           class="field-input field-input--narrow"
           type="text"
           placeholder="OH"
+          data-tutorial="state-input"
           autocomplete="off"
           spellcheck="false"
           maxlength="2"
@@ -124,7 +132,7 @@ function handleStart() {
 
       <div class="dialog-actions">
         <button class="btn-cancel" @click="emit('cancel')">Cancel</button>
-        <button class="btn-start" :disabled="!canStart" @click="handleStart">
+        <button class="btn-start" :disabled="!canStart" @click="handleStart" data-tutorial="start-activation-btn">
           Start Activation
         </button>
       </div>
