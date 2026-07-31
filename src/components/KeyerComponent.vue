@@ -76,6 +76,20 @@ function onKeyUp(event: KeyboardEvent) {
         onDahUp();
     }
 }
+
+// On mobile, the hidden <input> in GuidedInput stays focused after the user
+// dismisses the keyboard. Tapping a paddle button while a text input is focused
+// causes Android to reopen the keyboard. Blurring the active element first
+// prevents that without affecting keyer functionality.
+function onDitPress() {
+    (document.activeElement as HTMLElement)?.blur();
+    onDitDown();
+}
+
+function onDahPress() {
+    (document.activeElement as HTMLElement)?.blur();
+    onDahDown();
+}
 </script>
 
 <template>
@@ -84,7 +98,7 @@ function onKeyUp(event: KeyboardEvent) {
     <button
       class="paddle-btn dit-btn"
       :class="{ lit: isDitPressed }"
-      @pointerdown.prevent="onDitDown"
+      @pointerdown.prevent="onDitPress"
       @pointerup.prevent="onDitUp"
       @pointerleave="onDitUp"
       @pointercancel="onDitUp"
@@ -95,7 +109,7 @@ function onKeyUp(event: KeyboardEvent) {
     <button
       class="paddle-btn dah-btn"
       :class="{ lit: isDahPressed }"
-      @pointerdown.prevent="onDahDown"
+      @pointerdown.prevent="onDahPress"
       @pointerup.prevent="onDahUp"
       @pointerleave="onDahUp"
       @pointercancel="onDahUp"
