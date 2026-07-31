@@ -593,4 +593,66 @@ tr:hover .delete-row-btn {
   border-radius: 4px;
   vertical-align: middle;
 }
+
+/* ── Mobile layout ───────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .log-container {
+    padding: 12px 10px 10px;
+  }
+
+  .log-header {
+    margin-bottom: 10px;
+  }
+
+  /* Table scrolls horizontally so columns aren't crushed */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 10px;
+  }
+
+  .qso-table {
+    min-width: 400px;
+  }
+
+  /* Delete button always visible — no hover on touch */
+  .delete-row-btn {
+    visibility: visible;
+  }
+
+  /* Wrap the form into rows */
+  .input-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Row 1: Callsign full width */
+  .input-row > .input-field:first-child {
+    flex: 1 1 100%;
+  }
+
+  /* Row 2: RST and State share equal thirds */
+  .input-field--fixed {
+    flex: 1 1 0;
+    min-width: 56px;
+  }
+
+  /* Row 3: P2P, optional Park Ref, and Log button stay inline */
+  .input-field--p2p  { flex: 0 0 auto; }
+  .input-field--narrow { flex: 1 1 80px; }
+  .input-field--btn  { flex: 0 0 auto; }
+
+  /* Bigger tap target on the Log button */
+  .add-button {
+    padding: 8px 22px;
+    font-size: 1rem;
+  }
+
+  .cancel-button,
+  .update-button {
+    padding: 8px 14px;
+    font-size: 0.95rem;
+  }
+}
 </style>

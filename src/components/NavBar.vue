@@ -86,4 +86,38 @@ const route = useRoute()
   color: #fff;
   background: var(--accent);
 }
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 12px;
+    height: auto;
+    gap: 2px;
+  }
+
+  .navbar-brand {
+    padding: 4px 0;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .navbar-links {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .navbar-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navbar-links a {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+}
 </style>

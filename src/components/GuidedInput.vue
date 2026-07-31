@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { useMobileDetect } from '@/composables/useMobileDetect'
 
 const props = defineProps<{
     modelValue: string
@@ -13,8 +14,25 @@ const emit = defineEmits<{
     'send': []
 }>()
 
+const { isMobile } = useMobileDetect()
+
 const inputEl = ref<HTMLElement | null>(null)
+const mobileInputEl = ref<HTMLInputElement | null>(null)
 const isFocused = ref(false)
+
+// On mobile, the div can't open the virtual keyboard, so we overlay a real
+// <input> that captures keyboard events and delegates to the same handlers.
+function handleMobileInput(e: Event): void {
+    if (props.readonly) return
+    emit('update:modelValue', (e.target as HTMLInputElement).value.toUpperCase())
+}
+
+// When the hidden input gains focus, seed it with any value the keyer may have
+// typed while the keyboard was closed so subsequent typing appends correctly.
+function onMobileInputFocus(): void {
+    isFocused.value = true
+    if (mobileInputEl.value) mobileInputEl.value.value = props.modelValue
+}
 
 function handleKeydown(e: KeyboardEvent): void {
     if (props.readonly) return
@@ -65,9 +83,15 @@ const hintChars = computed<DisplayChar[]>(() => {
     return expected.slice(typed.length).split('').map(c => ({ char: c, state: 'hint' as const }))
 })
 
-// Restore focus after keyer appends a character externally
-watch(() => props.modelValue, async () => {
-    if (!isFocused.value) return
+watch(() => props.modelValue, async (val) => {
+    // When message is sent the parent resets modelValue to ''.
+    // Clear the hidden input so the next message starts fresh.
+    if (!val && mobileInputEl.value) mobileInputEl.value.value = ''
+
+    // Desktop: restore focus to the display div after the keyer appends a char.
+    // Skip on mobile — refocusing the div would steal focus from the real input
+    // and close the virtual keyboard.
+    if (!isFocused.value || isMobile.value) return
     await nextTick()
     inputEl.value?.focus()
 })
@@ -76,15 +100,16 @@ watch(() => props.modelValue, async () => {
 <template>
   <div class="guided-input-wrapper" data-tutorial="guided-input">
     <div class="guide-hint-label">{{ hintLabel }}</div>
-    <div
-      ref="inputEl"
-      class="guided-input"
-      :class="{ 'guided-input--focused': isFocused }"
-      tabindex="0"
-      @keydown="handleKeydown"
-      @focus="isFocused = true"
-      @blur="isFocused = false"
-    >
+    <div class="guided-input-outer">
+      <div
+        ref="inputEl"
+        class="guided-input"
+        :class="{ 'guided-input--focused': isFocused }"
+        tabindex="0"
+        @keydown="handleKeydown"
+        @focus="isFocused = true"
+        @blur="isFocused = false"
+      >
       <span
         v-for="(ch, i) in typedChars"
         :key="`t-${i}`"
@@ -101,6 +126,25 @@ watch(() => props.modelValue, async () => {
         class="char-hint placeholder-text"
       >Type your message here...</span>
     </div>
+
+    <!-- Transparent real input overlaid on the display div so the Android
+         virtual keyboard opens on tap. The display div handles all visuals;
+         this input only exists to receive native keyboard events. -->
+    <input
+      v-if="isMobile"
+      ref="mobileInputEl"
+      class="guided-input-mobile"
+      type="text"
+      @input="handleMobileInput"
+      @keydown.enter.prevent="$emit('send')"
+      @focus="onMobileInputFocus"
+      @blur="isFocused = false"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    />
+    </div>
   </div>
 </template>
 
@@ -110,6 +154,26 @@ watch(() => props.modelValue, async () => {
     flex-direction: column;
     width: 80%;
     gap: 6px;
+}
+
+.guided-input-outer {
+    position: relative;
+}
+
+/* Transparent real input that sits over the display div on mobile.
+   Its only job is to open the Android virtual keyboard on tap. */
+.guided-input-mobile {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: text;
+    font-size: 16px; /* prevents iOS auto-zoom on focus */
+    border: none;
+    background: transparent;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .guide-hint-label {

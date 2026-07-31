@@ -432,5 +432,11 @@ watch(
     padding: 13px 28px;
     font-size: 1rem;
   }
+
+  /* Compact textarea — 80vh is far too tall on mobile and breaks the layout */
+  .chat-input {
+    height: 56px;
+    flex: none;
+  }
 }
 </style>
