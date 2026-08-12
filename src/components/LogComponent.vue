@@ -2,6 +2,7 @@
 import { ref, nextTick, watch, useTemplateRef, computed } from 'vue'
 import { useQsoUtils } from '../composables/useQsoUtils'
 import type { QSO, QsoValidationMode } from '../types/activation'
+import { useTutorialStore, T } from '@/stores/tutorialStore'
 
 const props = defineProps<{ qsoList: QSO[]; readonly?: boolean; validationMode?: QsoValidationMode }>()
 const emit  = defineEmits<{
@@ -27,6 +28,23 @@ const isP2P        = ref(false)
 const editingIndex = ref<number | null>(null)
 const isEditing    = computed(() => editingIndex.value !== null)
 const newQSO       = ref<QSO>({ date: '', theirCall: '', sentRST: '', receivedRST: '', theirState: '' })
+
+const tutorial = useTutorialStore()
+
+// During tutorial log steps, the Log button stays disabled until the exact
+// required callsign (and state for LOG_QSO) is entered.
+const tutorialLogDisabled = computed(() => {
+    if (!tutorial.isActive) return false
+    const step = tutorial.currentStep
+    if (step === T.LOG_QSO) {
+        return newQSO.value.theirCall.toUpperCase() !== 'N9MET' ||
+               newQSO.value.theirState.toUpperCase() !== 'OH'
+    }
+    if (step === T.LOG_TENTH) {
+        return newQSO.value.theirCall.toUpperCase() !== 'KM4BE'
+    }
+    return false
+})
 
 const theirCallError   = computed(() => newQSO.value.theirCall.length   > 0 && !useQsoUtils().validateCall(newQSO.value.theirCall.toUpperCase()))
 const sentRstError     = computed(() => newQSO.value.sentRST.length     > 0 && !useQsoUtils().validateRST(newQSO.value.sentRST))
@@ -62,7 +80,7 @@ function resetForm() {
 }
 
 function addQSO() {
-  if (props.readonly) return
+  if (props.readonly || tutorialLogDisabled.value) return
   const qso = buildQso()
   if (!qso) return
   qso.date = new Date().toLocaleTimeString('en-US', {
@@ -275,7 +293,7 @@ watch(() => props.qsoList.length, async () => {
           <button class="cancel-button" @click="cancelEdit">Cancel</button>
           <button class="update-button" @click="saveEdit">Update</button>
         </div>
-        <button v-else class="add-button" @click="addQSO" :disabled="readonly">Log</button>
+        <button v-else class="add-button" @click="addQSO" :disabled="readonly || tutorialLogDisabled">Log</button>
       </div>
     </div>
 
