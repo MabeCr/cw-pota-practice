@@ -224,7 +224,11 @@ export class ConversationAiService {
         const hunterCall = hunter.callsign.toUpperCase();
 
         if (hunter.qsoStep === 'HUNTER_CALL') {
-            if (this.isFullCallInMessage(userMessage, hunterCall)) {
+            if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
+                await this.randomDelay();
+                this.sendHunterMessage(hunter, `R R ${hunter.callsign}`, true);
+
+            } else if (this.isFullCallInMessage(userMessage, hunterCall)) {
                 this.inQsoWithCallsign = hunter.callsign; // Lock — others go silent
                 hunter.qsoStep = 'ACTIVATOR_RST';
                 await this.randomDelay();
@@ -247,10 +251,6 @@ export class ConversationAiService {
                     })
                 }
 
-            } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
-                await this.randomDelay();
-                this.sendHunterMessage(hunter, `RR ${hunter.callsign}`, true);
-
             } else if (
                 this.isExchangeLike(userMessage) &&
                 (this.isPartialCallInMessage(userMessage, hunterCall) || this.isCallsignError(userMessage, hunterCall))
@@ -270,6 +270,10 @@ export class ConversationAiService {
                 await this.randomDelay();
                 this.sendHunterMessage(hunter, `NN ${hunterCall}`, true);
             }
+
+        } else if (hunter.qsoStep === 'HUNTER_RST' && this.isCallConfirmationQuery(userMessage, hunterCall)) {
+            await this.randomDelay();
+            this.sendHunterMessage(hunter, `R R ${hunter.callsign}`, true);
 
         } else if (hunter.qsoStep === 'HUNTER_RST' && userMessage.includes('73')) {
             hunter.qsoStep = 'ACTIVATOR_FINISH';
