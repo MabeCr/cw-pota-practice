@@ -313,6 +313,24 @@ onUnmounted(() => {
           </div>
 
           <div class="pref-row">
+            <label class="pref-label">Realistic CQ</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.realisticCq }"
+                title="Hunters respond immediately to every CQ call"
+                @click="settings.setRealisticCq(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.realisticCq }"
+                title="Hunters don't respond immediately — response probability grows with each CQ call, guaranteed by the 5th call"
+                @click="settings.setRealisticCq(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
             <label class="pref-label">Chat Messages</label>
             <div class="segment-group">
               <button

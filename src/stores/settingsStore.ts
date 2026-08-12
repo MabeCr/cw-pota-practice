@@ -41,6 +41,7 @@ function defaultState() {
         guidedQsos:         (saved.guidedQsos         as boolean)           ?? false,
         relaxedSpacing:     (saved.relaxedSpacing     as boolean)           ?? false,
         qsbEnabled:         (saved.qsbEnabled         as boolean)           ?? false,
+        realisticCq:        (saved.realisticCq        as boolean)           ?? false,
         mobileInputMethod:  (saved.mobileInputMethod  as MobileInputMethod) ?? 'on-screen' as MobileInputMethod,
     };
 }
@@ -110,6 +111,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setQsbEnabled(value: boolean) {
             this.qsbEnabled = value;
+            saveToStorage(this.$state);
+        },
+        setRealisticCq(value: boolean) {
+            this.realisticCq = value;
             saveToStorage(this.$state);
         },
         setMobileInputMethod(value: MobileInputMethod) {
