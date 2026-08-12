@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTutorialStore, STEP_AWAIT_ROUTES, STEP_AWAIT_ACTIONS, STEP_COUNT } from '@/stores/tutorialStore'
+import { useTutorialStore, STEP_AWAIT_ROUTES, STEP_AWAIT_ACTIONS, STEP_COUNT, T } from '@/stores/tutorialStore'
 import { TUTORIAL_STEPS } from '@/composables/useTutorialSteps'
 import { useMobileDetect } from '@/composables/useMobileDetect'
 
@@ -9,38 +9,51 @@ const tutorial = useTutorialStore()
 const router   = useRouter()
 const { isMobile } = useMobileDetect()
 
-const spotlightRect  = ref<DOMRect | null>(null)
-const tooltipVisible = ref(true)   // hidden while waiting for a targeted element to mount
-const canAdvanceNow  = ref(true)
+const spotlightRect    = ref<DOMRect | null>(null)
+const tooltipVisible   = ref(true)
+const canAdvanceNow    = ref(true)
+const tooltipEl        = ref<HTMLElement | null>(null)
+const resolvedPlacement = ref<'top' | 'bottom' | 'left' | 'right' | 'center'>('bottom')
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const step = computed(() => TUTORIAL_STEPS[tutorial.currentStep])
+const step       = computed(() => TUTORIAL_STEPS[tutorial.currentStep])
 const isLastStep = computed(() => tutorial.currentStep === STEP_COUNT - 1)
 
-// Action-gated steps advance automatically — hide the Next button entirely
+// Show Next button when:
+//   - not route/action gated, AND
+//   - either no canAdvance, OR canAdvance with manualAdvance (user must click Next)
 const showNextButton = computed(() => {
     const idx = tutorial.currentStep
     if (STEP_AWAIT_ROUTES[idx] || STEP_AWAIT_ACTIONS[idx]) return false
-    if (step.value?.canAdvance) return false
+    if (step.value?.canAdvance && !step.value.manualAdvance) return false
     return true
 })
+
+// Hide Back at step 0 (nothing before) and at PAGE_LAYOUT (activation just created;
+// going back would show the dialog card while already inside the activation).
+const showBackButton = computed(() =>
+    tutorial.currentStep > 0 && tutorial.currentStep !== T.PAGE_LAYOUT
+)
 
 // ── Spotlight positioning ─────────────────────────────────────────────────────
 
 function updateSpotlight() {
     const s = step.value
+    // Reset to the step's preferred placement on every spotlight update so the
+    // collision check below starts from the intended position each time.
+    resolvedPlacement.value = (s?.placement ?? 'bottom') as typeof resolvedPlacement.value
     if (!s?.target) {
         spotlightRect.value = null
         tooltipVisible.value = true
         return
     }
-    const primary   = document.querySelector(s.target)
-    const preferred = s.preferredTarget ? document.querySelector(s.preferredTarget) : null
-    // Spotlight prefers the more specific element once it appears; falls back to primary
+    const primary     = document.querySelector(s.target)
+    const preferred   = s.preferredTarget ? document.querySelector(s.preferredTarget) : null
     const spotlightEl = preferred ?? primary
     spotlightRect.value = spotlightEl ? spotlightEl.getBoundingClientRect() : null
-    // Tooltip is visible as long as the primary target is in the DOM
     tooltipVisible.value = primary !== null
+    // After Vue re-renders with the new spotlight, measure and adjust placement.
+    void nextTick(adjustTooltipPlacement)
 }
 
 const PAD = 10
@@ -56,10 +69,90 @@ const spotlightStyle = computed(() => {
     }
 })
 
+// ── Blocker strips for interactive steps ──────────────────────────────────────
+// Four rectangles that surround the spotlight area — everything outside the
+// spotlight is blocked; the spotlight hole passes through to the underlying UI.
+
+const blockerStrips = computed(() => {
+    const r = spotlightRect.value
+    if (!r) return null
+    const sTop    = Math.max(0, r.top    - PAD)
+    const sLeft   = Math.max(0, r.left   - PAD)
+    const sRight  = Math.min(window.innerWidth,  r.right  + PAD)
+    const sBottom = Math.min(window.innerHeight, r.bottom + PAD)
+    const h = `${sBottom - sTop}px`
+    return [
+        { position: 'fixed' as const, top: '0',            left: '0',           right: '0',  height: `${sTop}px` },
+        { position: 'fixed' as const, top: `${sBottom}px`, left: '0',           right: '0',  bottom: '0'         },
+        { position: 'fixed' as const, top: `${sTop}px`,    left: '0',           width: `${sLeft}px`, height: h   },
+        { position: 'fixed' as const, top: `${sTop}px`,    left: `${sRight}px`, right: '0',  height: h           },
+    ]
+})
+
 // ── Tooltip positioning ───────────────────────────────────────────────────────
 
-const TOOLTIP_W = 360
+const TOOLTIP_W      = 360
 const TOOLTIP_MARGIN = 16
+const GAP            = 16
+
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center'
+
+// Fallback order when the preferred placement overlaps the spotlight.
+const PLACEMENT_FALLBACKS: Record<Placement, Placement[]> = {
+    bottom: ['top', 'right', 'left', 'center'],
+    top:    ['bottom', 'right', 'left', 'center'],
+    right:  ['left', 'bottom', 'top', 'center'],
+    left:   ['right', 'bottom', 'top', 'center'],
+    center: ['bottom', 'top', 'right', 'left'],
+}
+
+function computeTooltipPos(placement: Placement, r: DOMRect, tw: number, th: number) {
+    const sCenterX = r.left - PAD + (r.width  + PAD * 2) / 2
+    const sCenterY = r.top  - PAD + (r.height + PAD * 2) / 2
+    let top: number, left: number
+    if (placement === 'center') {
+        top  = sCenterY - th / 2;  left = sCenterX - tw / 2
+    } else if (placement === 'bottom') {
+        top  = r.bottom + PAD + GAP; left = sCenterX - tw / 2
+    } else if (placement === 'top') {
+        top  = r.top - PAD - GAP - th; left = sCenterX - tw / 2
+    } else if (placement === 'left') {
+        top  = sCenterY - th / 2; left = r.left - PAD - GAP - tw
+    } else {
+        top  = sCenterY - th / 2; left = r.right + PAD + GAP
+    }
+    left = Math.max(TOOLTIP_MARGIN, Math.min(left, window.innerWidth  - tw - TOOLTIP_MARGIN))
+    top  = Math.max(TOOLTIP_MARGIN, Math.min(top,  window.innerHeight - th - TOOLTIP_MARGIN))
+    return { top, left }
+}
+
+function rectsOverlap(
+    a: { top: number; left: number; bottom: number; right: number },
+    b: { top: number; left: number; bottom: number; right: number },
+) {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+// Called after each render cycle — measures the actual tooltip height and picks
+// the first placement that doesn't overlap the spotlight.
+function adjustTooltipPlacement() {
+    const sr = spotlightRect.value
+    const el = tooltipEl.value
+    if (!sr || !el) return
+    const tw       = TOOLTIP_W
+    const th       = el.offsetHeight || 220
+    const spotRect = { top: sr.top - PAD, left: sr.left - PAD, bottom: sr.bottom + PAD, right: sr.right + PAD }
+    const preferred = resolvedPlacement.value
+    const candidates: Placement[] = [preferred, ...(PLACEMENT_FALLBACKS[preferred] ?? [])]
+    for (const p of candidates) {
+        const { top, left } = computeTooltipPos(p, sr, tw, th)
+        if (!rectsOverlap({ top, left, bottom: top + th, right: left + tw }, spotRect)) {
+            resolvedPlacement.value = p
+            return
+        }
+    }
+    // All positions overlap (very small viewport) — keep preferred
+}
 
 const tooltipStyle = computed(() => {
     const r = spotlightRect.value
@@ -72,36 +165,8 @@ const tooltipStyle = computed(() => {
             transform: 'translate(-50%, -50%)',
         }
     }
-
-    const placement = step.value?.placement ?? 'bottom'
-    const GAP = 16
-
-    let top: number, left: number
-
-    const sCenterX = r.left - PAD + (r.width  + PAD * 2) / 2
-    const sCenterY = r.top  - PAD + (r.height + PAD * 2) / 2
-
-    if (placement === 'center') {
-        top  = sCenterY - 110
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'bottom') {
-        top  = r.bottom + PAD + GAP
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'top') {
-        top  = r.top - PAD - GAP - 300  // generous estimate so longer cards don't overlap
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'left') {
-        top  = sCenterY - 110
-        left = r.left - PAD - GAP - TOOLTIP_W
-    } else {
-        top  = sCenterY - 110
-        left = r.right + PAD + GAP
-    }
-
-    // Clamp to viewport
-    left = Math.max(TOOLTIP_MARGIN, Math.min(left, window.innerWidth  - TOOLTIP_W - TOOLTIP_MARGIN))
-    top  = Math.max(TOOLTIP_MARGIN, Math.min(top,  window.innerHeight - 240 - TOOLTIP_MARGIN))
-
+    const th = tooltipEl.value?.offsetHeight || 220
+    const { top, left } = computeTooltipPos(resolvedPlacement.value, r, TOOLTIP_W, th)
     return {
         position: 'fixed' as const,
         top:  `${top}px`,
@@ -118,12 +183,12 @@ function checkCanAdvance() {
         canAdvanceNow.value = true
         return
     }
-    const ready = s.canAdvance({ tutorialActivationId: tutorial.tutorialActivationId })
-    if (ready && !canAdvanceNow.value) {
-        canAdvanceNow.value = true
+    const ready    = s.canAdvance({ tutorialActivationId: tutorial.tutorialActivationId })
+    const wasReady = canAdvanceNow.value
+    canAdvanceNow.value = ready
+    // Auto-advance only for non-manual steps (work-qso, log-qso, end-activation)
+    if (ready && !wasReady && !s.manualAdvance) {
         void nextTick(() => tutorial.advance())
-    } else {
-        canAdvanceNow.value = ready
     }
 }
 
@@ -131,14 +196,22 @@ function checkCanAdvance() {
 
 watch(
     () => tutorial.currentStep,
-    async () => {
+    async (newStep, oldStep) => {
+        const goingBack = newStep < oldStep
         canAdvanceNow.value = false
-        // Hide tooltip immediately on step change; updateSpotlight will show it once
-        // the target element is found (prevents centered flash over interactive content)
         if (step.value?.target) tooltipVisible.value = false
         await nextTick()
         updateSpotlight()
-        checkCanAdvance()
+        if (goingBack) {
+            // Going backward: pre-fill canAdvanceNow with the current state so the
+            // poll timer sees wasReady=true and does NOT immediately re-advance.
+            const s = step.value
+            canAdvanceNow.value = s?.canAdvance
+                ? s.canAdvance({ tutorialActivationId: tutorial.tutorialActivationId })
+                : true
+        } else {
+            checkCanAdvance()
+        }
     },
 )
 
@@ -150,7 +223,6 @@ watch(
             updateSpotlight()
             checkCanAdvance()
         } else if (wasActive) {
-            // Tutorial finished or skipped — go home and clean up
             void router.push('/')
         }
     },
@@ -166,7 +238,6 @@ onMounted(() => {
 
     pollTimer = setInterval(() => {
         checkCanAdvance()
-        // Retry spotlight if target element wasn't in DOM yet (e.g. dialog just mounted)
         if (!spotlightRect.value && step.value?.target) updateSpotlight()
     }, 400)
 
@@ -177,7 +248,6 @@ onMounted(() => {
         if (to.name === 'activation' && typeof to.params.id === 'string') {
             tutorial.tutorialActivationId = to.params.id
         }
-        // nextTick so the new page's DOM is ready before we spotlight it
         void nextTick(() => tutorial.advance())
     })
 })
@@ -195,33 +265,64 @@ function handleNext() {
     if (!canAdvanceNow.value) return
     tutorial.advance()
 }
+
+async function handleBack() {
+    const from = tutorial.currentStep
+    tutorial.back()
+    // Going back from op-landing (at /operation) returns to the landing page
+    if (from === T.OP_LANDING) {
+        await router.push('/')
+    }
+}
 </script>
 
 <template>
   <Teleport to="body">
-    <!-- Mobile: show a simple notice instead of the full overlay -->
+    <!-- Mobile: tutorial requires desktop -->
     <template v-if="tutorial.isActive && isMobile">
       <div class="tutorial-dimmer" />
       <div class="tutorial-tooltip mobile-notice">
-        <p class="mobile-notice-text">The tutorial is only available on desktop. Use a larger screen for the full guided walkthrough.</p>
+        <p class="mobile-notice-text">The tutorial is only available on desktop. Please open the app on a larger screen to take the guided walkthrough.</p>
         <button class="tutorial-btn tutorial-btn--next" @click="tutorial.finish()">Got it</button>
       </div>
     </template>
 
     <template v-else-if="tutorial.isActive && step">
 
-      <!-- Dark backdrop + spotlight (only when a target is specified) -->
+      <!-- Visual spotlight (pointer-events: none — purely decorative) -->
       <div
         v-if="spotlightStyle"
         class="tutorial-spotlight"
         :style="spotlightStyle"
       />
-
-      <!-- Semi-transparent full-screen dimmer (no target = just dim everything) -->
+      <!-- Full-screen dimmer for steps with no spotlight target -->
       <div v-else class="tutorial-dimmer" />
 
-      <!-- Tooltip card (hidden until targeted element is in the DOM) -->
-      <div v-show="tooltipVisible" class="tutorial-tooltip" :style="tooltipStyle">
+      <!-- ── Background blockers ─────────────────────────────────────────── -->
+
+      <!-- Interactive steps: four strips around the spotlight hole so only the
+           spotlit area receives pointer events -->
+      <template v-if="step.blockBackground && step.allowInteraction">
+        <template v-if="blockerStrips">
+          <div
+            v-for="(strip, i) in blockerStrips"
+            :key="i"
+            class="tutorial-blocker"
+            :style="strip"
+          />
+        </template>
+        <!-- Fallback: spotlight rect not computed yet, block everything -->
+        <div v-else class="tutorial-blocker tutorial-blocker--full" />
+      </template>
+
+      <!-- Non-interactive steps: single full-screen blocker -->
+      <div
+        v-else-if="step.blockBackground && !step.allowInteraction"
+        class="tutorial-blocker tutorial-blocker--full"
+      />
+
+      <!-- ── Tooltip card ────────────────────────────────────────────────── -->
+      <div ref="tooltipEl" v-show="tooltipVisible" class="tutorial-tooltip" :style="tooltipStyle">
         <div class="tutorial-progress">
           <span class="tutorial-step-num">Step {{ tutorial.currentStep + 1 }} of {{ STEP_COUNT }}</span>
           <button class="tutorial-skip" @click="tutorial.finish()">Skip tutorial</button>
@@ -232,14 +333,17 @@ function handleNext() {
 
         <div class="tutorial-actions">
           <button
-            v-if="tutorial.currentStep > 0"
+            v-if="showBackButton"
             class="tutorial-btn tutorial-btn--back"
-            @click="tutorial.back()"
+            @click="handleBack"
           >← Back</button>
 
           <div class="tutorial-actions-right">
-            <span v-if="!showNextButton || (step.canAdvance && !canAdvanceNow)" class="tutorial-waiting">
-              Waiting…
+            <!-- Auto-advance steps show "Waiting…" instead of Next -->
+            <span v-if="!showNextButton" class="tutorial-waiting">Waiting…</span>
+            <!-- Manual-advance steps show a hint when the condition isn't met yet -->
+            <span v-else-if="step.hint && step.manualAdvance && !canAdvanceNow" class="tutorial-hint">
+              {{ step.hint }}
             </span>
             <button
               v-if="showNextButton"
@@ -266,7 +370,7 @@ function handleNext() {
         0 0 0 3px var(--accent),
         0 0 0 5px rgba(255, 255, 255, 0.15);
     pointer-events: none;
-    z-index: 9998;
+    z-index: 9997;
     transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
 }
 
@@ -275,7 +379,21 @@ function handleNext() {
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
     pointer-events: none;
-    z-index: 9998;
+    z-index: 9997;
+}
+
+/* Sits between app content and the spotlight/tooltip so it catches pointer
+   events without obscuring the visual overlay. */
+.tutorial-blocker {
+    position: fixed;
+    z-index: 9996;
+    pointer-events: all;
+    background: transparent;
+    cursor: default;
+}
+
+.tutorial-blocker--full {
+    inset: 0;
 }
 
 .tutorial-tooltip {
@@ -349,6 +467,15 @@ function handleNext() {
     font-size: 0.75rem;
     color: var(--text-faint);
     font-style: italic;
+}
+
+.tutorial-hint {
+    font-size: 0.75rem;
+    color: var(--accent-text);
+    font-style: italic;
+    max-width: 180px;
+    text-align: right;
+    line-height: 1.4;
 }
 
 .tutorial-btn {
