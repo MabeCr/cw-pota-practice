@@ -39,6 +39,7 @@ function defaultState() {
         qsoValidation:   (saved.qsoValidation   as QsoValidationMode)   ?? 'none'  as QsoValidationMode,
         theme:              (saved.theme              as AppTheme)          ?? 'light' as AppTheme,
         guidedQsos:         (saved.guidedQsos         as boolean)           ?? false,
+        relaxedSpacing:     (saved.relaxedSpacing     as boolean)           ?? false,
         mobileInputMethod:  (saved.mobileInputMethod  as MobileInputMethod) ?? 'on-screen' as MobileInputMethod,
     };
 }
@@ -100,6 +101,10 @@ export const useSettingsStore = defineStore('settings', {
         },
         setGuidedQsos(value: boolean) {
             this.guidedQsos = value;
+            saveToStorage(this.$state);
+        },
+        setRelaxedSpacing(value: boolean) {
+            this.relaxedSpacing = value;
             saveToStorage(this.$state);
         },
         setMobileInputMethod(value: MobileInputMethod) {

@@ -113,8 +113,13 @@ export class ConversationAiService {
         }, { deep: true });
     }
 
+    private normalizeUserMessage(msg: string): string {
+        const upper = msg.trim().toUpperCase()
+        return useSettingsStore().relaxedSpacing ? upper.replace(/\s+/g, '') : upper
+    }
+
     private async handleUserMessage(message: Message): Promise<void> {
-        const userMessage = message.message.trim().toUpperCase();
+        const userMessage = this.normalizeUserMessage(message.message);
 
         if (userMessage.includes('CQ') && userMessage.includes('POTA')) {
             this.partialQueryTarget = null;
@@ -288,10 +293,12 @@ export class ConversationAiService {
     }
 
     private isFullCallInMessage(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) return message.includes(callsign)
         return message.split(/\s+/).includes(callsign);
     }
 
     private isCallConfirmationQuery(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) return message.includes(`${callsign}?`)
         return message.split(/\s+/).some(word => word === `${callsign}?`);
     }
 
@@ -301,6 +308,14 @@ export class ConversationAiService {
     }
 
     private isPartialCallInMessage(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) {
+            if (message.includes(callsign)) return false
+            // Match any prefix of length ≥ 2 that appears in the space-collapsed message
+            for (let len = 2; len < callsign.length; len++) {
+                if (message.includes(callsign.slice(0, len))) return true
+            }
+            return false
+        }
         return message.split(/\s+/).some(word => {
             if (word === callsign) return false;
 
@@ -321,6 +336,9 @@ export class ConversationAiService {
     }
 
     private isCallsignError(message: string, callsign: string): boolean {
+        // Skip error-correction in relaxed-spacing mode — the collapsed string
+        // makes per-token Levenshtein distance meaningless.
+        if (useSettingsStore().relaxedSpacing) return false
         return message.split(/\s+/).some(word =>
             word !== callsign && this.levenshtein(word, callsign) === 1
         );

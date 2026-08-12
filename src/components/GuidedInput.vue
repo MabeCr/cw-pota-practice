@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { useMobileDetect } from '@/composables/useMobileDetect'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const props = defineProps<{
     modelValue: string
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { isMobile } = useMobileDetect()
+const settings = useSettingsStore()
 
 const inputEl = ref<HTMLElement | null>(null)
 const mobileInputEl = ref<HTMLInputElement | null>(null)
@@ -66,6 +68,19 @@ const typedChars = computed<DisplayChar[]>(() => {
     if (!expected) {
         return typed.split('').map(c => ({ char: c, state: 'plain' as const }))
     }
+    if (settings.relaxedSpacing) {
+        const strippedExpected = expected.replace(/\s+/g, '')
+        let nonSpaceIdx = 0
+        return typed.split('').map(c => {
+            if (c === ' ') return { char: c, state: 'plain' as const }
+            const e = strippedExpected[nonSpaceIdx++]
+            if (e === undefined) return { char: c, state: 'incorrect' as const }
+            return {
+                char: c,
+                state: charMatches(c.toUpperCase(), e.toUpperCase()) ? 'correct' as const : 'incorrect' as const,
+            }
+        })
+    }
     return typed.split('').map((c, i) => {
         const e = expected[i]
         if (e === undefined) return { char: c, state: 'incorrect' as const }
@@ -80,6 +95,20 @@ const hintChars = computed<DisplayChar[]>(() => {
     const typed    = normalize(props.modelValue)
     const expected = normalize(props.expectedText ?? '')
     if (!expected) return []
+    if (settings.relaxedSpacing) {
+        // Count non-space chars already typed, then find where they end in the
+        // original expected string so the hint shows canonical spacing.
+        const nonSpaceTypedLen = typed.split('').filter(c => c !== ' ').length
+        let nonSpaceCount = 0
+        let hintStart = expected.length
+        for (let i = 0; i < expected.length; i++) {
+            if (expected[i] !== ' ') {
+                if (nonSpaceCount === nonSpaceTypedLen) { hintStart = i; break }
+                nonSpaceCount++
+            }
+        }
+        return expected.slice(hintStart).split('').map(c => ({ char: c, state: 'hint' as const }))
+    }
     return expected.slice(typed.length).split('').map(c => ({ char: c, state: 'hint' as const }))
 })
 

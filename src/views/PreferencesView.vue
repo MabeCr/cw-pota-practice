@@ -277,6 +277,24 @@ onUnmounted(() => {
           </div>
 
           <div class="pref-row">
+            <label class="pref-label">Relaxed Spacing</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.relaxedSpacing }"
+                title="Whitespace in your message must match the expected exchange exactly"
+                @click="settings.setRelaxedSpacing(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.relaxedSpacing }"
+                title="Extra or missing spaces between characters are ignored when matching your message"
+                @click="settings.setRelaxedSpacing(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
             <label class="pref-label">Chat Messages</label>
             <div class="segment-group">
               <button
