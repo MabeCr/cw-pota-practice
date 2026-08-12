@@ -20,12 +20,14 @@ export class ConversationAiService {
     private lastProcessedLength = 0;
     private tutorialMode = false;
     private tutorialQsoCount = 0;
+    private cqCount = 0;
 
     enableTutorialMode(): void {
         this.tutorialMode = true;
         this.tutorialQsoCount = 0;
         this.activeStationList.value = [];
         this.inQsoWithCallsign = null;
+        this.cqCount = 0;
     }
 
     disableTutorialMode(): void {
@@ -33,6 +35,7 @@ export class ConversationAiService {
         this.tutorialQsoCount = 0;
         this.activeStationList.value = [];
         this.inQsoWithCallsign = null;
+        this.cqCount = 0;
     }
 
     constructor() {
@@ -50,6 +53,7 @@ export class ConversationAiService {
 
         if (!isSameActivation) {
             this.activeStationList.value = [];
+            this.cqCount = 0;
         }
 
         // Restore from store when no hunters are in memory (page refresh, new session,
@@ -113,8 +117,13 @@ export class ConversationAiService {
         }, { deep: true });
     }
 
+    private normalizeUserMessage(msg: string): string {
+        const upper = msg.trim().toUpperCase()
+        return useSettingsStore().relaxedSpacing ? upper.replace(/\s+/g, '') : upper
+    }
+
     private async handleUserMessage(message: Message): Promise<void> {
-        const userMessage = message.message.trim().toUpperCase();
+        const userMessage = this.normalizeUserMessage(message.message);
 
         if (userMessage.includes('CQ') && userMessage.includes('POTA')) {
             this.partialQueryTarget = null;
@@ -179,16 +188,51 @@ export class ConversationAiService {
             return;
         }
 
-        // Top up to hunterCount — existing hunters persist until they complete a QSO
-        const needed = useSettingsStore().hunterCount - this.activeStationList.value.length;
-        for (let i = 0; i < needed; i++) {
-            this.activeStationList.value.push(this.createHunter());
+        const settings = useSettingsStore();
+        const maxHunters = settings.hunterCount;
+
+        if (settings.realisticCq) {
+            this.cqCount++;
+            // Probability grows 20% per CQ: 20% on first call, guaranteed by the 5th.
+            const probability = Math.min(1.0, this.cqCount * 0.20);
+            const slots = maxHunters - this.activeStationList.value.length;
+            let spawned = 0;
+            for (let i = 0; i < slots; i++) {
+                if (Math.random() < probability) {
+                    this.activeStationList.value.push(this.createHunter());
+                    spawned++;
+                }
+            }
+            // Hard guarantee: if nothing spawned by CQ #5, force at least one hunter
+            if (spawned === 0 && this.cqCount >= 5 && slots > 0) {
+                this.activeStationList.value.push(this.createHunter());
+            }
+        } else {
+            // Normal mode: always fill all available slots immediately
+            const needed = maxHunters - this.activeStationList.value.length;
+            for (let i = 0; i < needed; i++) {
+                this.activeStationList.value.push(this.createHunter());
+            }
         }
 
-        // All hunters (existing + new) re-call with independent random delays
+        // All hunters (existing + newly spawned) re-call with independent random delays
         for (const hunter of this.activeStationList.value) {
             hunter.qsoStep = 'CQ';
             void this.hunterCallIn(hunter);
+        }
+    }
+
+    // Spawn hunters quietly during an active QSO — they wait in the list and call in
+    // once the current QSO ends (the QSO-end loop calls hunterCallIn on all remaining).
+    private trySpawnWaitingHunters(): void {
+        const settings = useSettingsStore();
+        if (!settings.realisticCq) return;
+        const probability = Math.min(1.0, this.cqCount * 0.20);
+        const slots = settings.hunterCount - this.activeStationList.value.length;
+        for (let i = 0; i < slots; i++) {
+            if (Math.random() < probability) {
+                this.activeStationList.value.push(this.createHunter());
+            }
         }
     }
 
@@ -219,8 +263,13 @@ export class ConversationAiService {
         const hunterCall = hunter.callsign.toUpperCase();
 
         if (hunter.qsoStep === 'HUNTER_CALL') {
-            if (this.isFullCallInMessage(userMessage, hunterCall)) {
+            if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
+                await this.randomDelay();
+                this.sendHunterMessage(hunter, `R R ${hunter.callsign}`, true);
+
+            } else if (this.isFullCallInMessage(userMessage, hunterCall)) {
                 this.inQsoWithCallsign = hunter.callsign; // Lock — others go silent
+                this.trySpawnWaitingHunters(); // realistic CQ: queue hunters mid-QSO
                 hunter.qsoStep = 'ACTIVATOR_RST';
                 await this.randomDelay();
 
@@ -242,10 +291,6 @@ export class ConversationAiService {
                     })
                 }
 
-            } else if (this.isCallConfirmationQuery(userMessage, hunterCall)) {
-                await this.randomDelay();
-                this.sendHunterMessage(hunter, `RR ${hunter.callsign}`, true);
-
             } else if (
                 this.isExchangeLike(userMessage) &&
                 (this.isPartialCallInMessage(userMessage, hunterCall) || this.isCallsignError(userMessage, hunterCall))
@@ -266,6 +311,10 @@ export class ConversationAiService {
                 this.sendHunterMessage(hunter, `NN ${hunterCall}`, true);
             }
 
+        } else if (hunter.qsoStep === 'HUNTER_RST' && this.isCallConfirmationQuery(userMessage, hunterCall)) {
+            await this.randomDelay();
+            this.sendHunterMessage(hunter, `R R ${hunter.callsign}`, true);
+
         } else if (hunter.qsoStep === 'HUNTER_RST' && userMessage.includes('73')) {
             hunter.qsoStep = 'ACTIVATOR_FINISH';
             await this.randomDelay();
@@ -279,6 +328,9 @@ export class ConversationAiService {
             this.hunterLastMessage.delete(hunter.callsign);
             this.inQsoWithCallsign = null;
 
+            // Reset CQ counter when all hunters have been worked — next CQ starts fresh
+            if (remaining.length === 0) this.cqCount = 0;
+
             // Remaining hunters re-call to signal they are still available
             for (const remainingHunter of remaining) {
                 remainingHunter.qsoStep = 'CQ';
@@ -288,10 +340,12 @@ export class ConversationAiService {
     }
 
     private isFullCallInMessage(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) return message.includes(callsign)
         return message.split(/\s+/).includes(callsign);
     }
 
     private isCallConfirmationQuery(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) return message.includes(`${callsign}?`)
         return message.split(/\s+/).some(word => word === `${callsign}?`);
     }
 
@@ -301,6 +355,14 @@ export class ConversationAiService {
     }
 
     private isPartialCallInMessage(message: string, callsign: string): boolean {
+        if (useSettingsStore().relaxedSpacing) {
+            if (message.includes(callsign)) return false
+            // Match any prefix of length ≥ 2 that appears in the space-collapsed message
+            for (let len = 2; len < callsign.length; len++) {
+                if (message.includes(callsign.slice(0, len))) return true
+            }
+            return false
+        }
         return message.split(/\s+/).some(word => {
             if (word === callsign) return false;
 
@@ -321,6 +383,9 @@ export class ConversationAiService {
     }
 
     private isCallsignError(message: string, callsign: string): boolean {
+        // Skip error-correction in relaxed-spacing mode — the collapsed string
+        // makes per-token Levenshtein distance meaningless.
+        if (useSettingsStore().relaxedSpacing) return false
         return message.split(/\s+/).some(word =>
             word !== callsign && this.levenshtein(word, callsign) === 1
         );

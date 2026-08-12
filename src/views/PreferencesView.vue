@@ -277,6 +277,60 @@ onUnmounted(() => {
           </div>
 
           <div class="pref-row">
+            <label class="pref-label">Relaxed Spacing</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.relaxedSpacing }"
+                title="Whitespace in your message must match the expected exchange exactly"
+                @click="settings.setRelaxedSpacing(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.relaxedSpacing }"
+                title="Extra or missing spaces between characters are ignored when matching your message"
+                @click="settings.setRelaxedSpacing(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
+            <label class="pref-label">QSB (Band Fading)</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.qsbEnabled }"
+                title="Hunter signals are always consistent"
+                @click="settings.setQsbEnabled(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.qsbEnabled }"
+                title="5% of hunter transmissions randomly fade mid-message"
+                @click="settings.setQsbEnabled(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
+            <label class="pref-label">Realistic CQ</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.realisticCq }"
+                title="Hunters respond immediately to every CQ call"
+                @click="settings.setRealisticCq(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.realisticCq }"
+                title="Hunters don't respond immediately — response probability grows with each CQ call, guaranteed by the 5th call"
+                @click="settings.setRealisticCq(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
             <label class="pref-label">Chat Messages</label>
             <div class="segment-group">
               <button
