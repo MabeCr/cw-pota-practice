@@ -130,8 +130,10 @@ export function useQsoGuide(
     function isAllGreen(typed: string): boolean {
         const expected = expectedText.value
         if (!expected) return false
-        const t = normalize(typed.trim().toUpperCase())
-        const e = normalize(expected.toUpperCase())
+        // Strip spaces before comparing so keyer inter-character timing gaps
+        // (e.g. "T U" instead of "TU") don't break phase transitions.
+        const t = normalize(typed.trim().toUpperCase()).replace(/\s+/g, '')
+        const e = normalize(expected.toUpperCase()).replace(/\s+/g, '')
         if (t.length !== e.length) return false
         return t.split('').every((c, i) => charMatches(c, e[i] ?? ''))
     }
@@ -168,6 +170,18 @@ export function useQsoGuide(
         // the guide detected the send (guards against BK normalisation gaps or timing issues)
         if (p.phase === 'wait_hunters' || p.phase === 'cq') {
             phase.value = { phase: 'pick_hunter' }
+            return
+        }
+
+        // Recovery: if isAllGreen failed on the exchange (e.g. keyer timing inserted an
+        // extra space), the guide never advanced pick_hunter → wait_confirm. Detect this by
+        // checking whether the AI service already has the hunter in HUNTER_RST state, which
+        // only happens after a successful exchange start. Skip wait_confirm entirely.
+        if (p.phase === 'pick_hunter') {
+            const hunter = getConversationAiService().getActiveStations().find(
+                s => s.callsign === originator && s.qsoStep === 'HUNTER_RST',
+            )
+            if (hunter) phase.value = { phase: 'close', hunter }
             return
         }
 
