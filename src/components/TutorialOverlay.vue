@@ -9,9 +9,11 @@ const tutorial = useTutorialStore()
 const router   = useRouter()
 const { isMobile } = useMobileDetect()
 
-const spotlightRect  = ref<DOMRect | null>(null)
-const tooltipVisible = ref(true)
-const canAdvanceNow  = ref(true)
+const spotlightRect    = ref<DOMRect | null>(null)
+const tooltipVisible   = ref(true)
+const canAdvanceNow    = ref(true)
+const tooltipEl        = ref<HTMLElement | null>(null)
+const resolvedPlacement = ref<'top' | 'bottom' | 'left' | 'right' | 'center'>('bottom')
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const step       = computed(() => TUTORIAL_STEPS[tutorial.currentStep])
@@ -37,16 +39,21 @@ const showBackButton = computed(() =>
 
 function updateSpotlight() {
     const s = step.value
+    // Reset to the step's preferred placement on every spotlight update so the
+    // collision check below starts from the intended position each time.
+    resolvedPlacement.value = (s?.placement ?? 'bottom') as typeof resolvedPlacement.value
     if (!s?.target) {
         spotlightRect.value = null
         tooltipVisible.value = true
         return
     }
-    const primary   = document.querySelector(s.target)
-    const preferred = s.preferredTarget ? document.querySelector(s.preferredTarget) : null
+    const primary     = document.querySelector(s.target)
+    const preferred   = s.preferredTarget ? document.querySelector(s.preferredTarget) : null
     const spotlightEl = preferred ?? primary
     spotlightRect.value = spotlightEl ? spotlightEl.getBoundingClientRect() : null
     tooltipVisible.value = primary !== null
+    // After Vue re-renders with the new spotlight, measure and adjust placement.
+    void nextTick(adjustTooltipPlacement)
 }
 
 const PAD = 10
@@ -75,17 +82,77 @@ const blockerStrips = computed(() => {
     const sBottom = Math.min(window.innerHeight, r.bottom + PAD)
     const h = `${sBottom - sTop}px`
     return [
-        { position: 'fixed', top: '0',          left: '0', right: '0',          height: `${sTop}px`   },
-        { position: 'fixed', top: `${sBottom}px`, left: '0', right: '0',         bottom: '0'            },
-        { position: 'fixed', top: `${sTop}px`,  left: '0', width: `${sLeft}px`, height: h              },
-        { position: 'fixed', top: `${sTop}px`,  left: `${sRight}px`, right: '0', height: h             },
+        { position: 'fixed' as const, top: '0',            left: '0',           right: '0',  height: `${sTop}px` },
+        { position: 'fixed' as const, top: `${sBottom}px`, left: '0',           right: '0',  bottom: '0'         },
+        { position: 'fixed' as const, top: `${sTop}px`,    left: '0',           width: `${sLeft}px`, height: h   },
+        { position: 'fixed' as const, top: `${sTop}px`,    left: `${sRight}px`, right: '0',  height: h           },
     ]
 })
 
 // ── Tooltip positioning ───────────────────────────────────────────────────────
 
-const TOOLTIP_W = 360
+const TOOLTIP_W      = 360
 const TOOLTIP_MARGIN = 16
+const GAP            = 16
+
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center'
+
+// Fallback order when the preferred placement overlaps the spotlight.
+const PLACEMENT_FALLBACKS: Record<Placement, Placement[]> = {
+    bottom: ['top', 'right', 'left', 'center'],
+    top:    ['bottom', 'right', 'left', 'center'],
+    right:  ['left', 'bottom', 'top', 'center'],
+    left:   ['right', 'bottom', 'top', 'center'],
+    center: ['bottom', 'top', 'right', 'left'],
+}
+
+function computeTooltipPos(placement: Placement, r: DOMRect, tw: number, th: number) {
+    const sCenterX = r.left - PAD + (r.width  + PAD * 2) / 2
+    const sCenterY = r.top  - PAD + (r.height + PAD * 2) / 2
+    let top: number, left: number
+    if (placement === 'center') {
+        top  = sCenterY - th / 2;  left = sCenterX - tw / 2
+    } else if (placement === 'bottom') {
+        top  = r.bottom + PAD + GAP; left = sCenterX - tw / 2
+    } else if (placement === 'top') {
+        top  = r.top - PAD - GAP - th; left = sCenterX - tw / 2
+    } else if (placement === 'left') {
+        top  = sCenterY - th / 2; left = r.left - PAD - GAP - tw
+    } else {
+        top  = sCenterY - th / 2; left = r.right + PAD + GAP
+    }
+    left = Math.max(TOOLTIP_MARGIN, Math.min(left, window.innerWidth  - tw - TOOLTIP_MARGIN))
+    top  = Math.max(TOOLTIP_MARGIN, Math.min(top,  window.innerHeight - th - TOOLTIP_MARGIN))
+    return { top, left }
+}
+
+function rectsOverlap(
+    a: { top: number; left: number; bottom: number; right: number },
+    b: { top: number; left: number; bottom: number; right: number },
+) {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+// Called after each render cycle — measures the actual tooltip height and picks
+// the first placement that doesn't overlap the spotlight.
+function adjustTooltipPlacement() {
+    const sr = spotlightRect.value
+    const el = tooltipEl.value
+    if (!sr || !el) return
+    const tw       = TOOLTIP_W
+    const th       = el.offsetHeight || 220
+    const spotRect = { top: sr.top - PAD, left: sr.left - PAD, bottom: sr.bottom + PAD, right: sr.right + PAD }
+    const preferred = resolvedPlacement.value
+    const candidates: Placement[] = [preferred, ...(PLACEMENT_FALLBACKS[preferred] ?? [])]
+    for (const p of candidates) {
+        const { top, left } = computeTooltipPos(p, sr, tw, th)
+        if (!rectsOverlap({ top, left, bottom: top + th, right: left + tw }, spotRect)) {
+            resolvedPlacement.value = p
+            return
+        }
+    }
+    // All positions overlap (very small viewport) — keep preferred
+}
 
 const tooltipStyle = computed(() => {
     const r = spotlightRect.value
@@ -98,35 +165,8 @@ const tooltipStyle = computed(() => {
             transform: 'translate(-50%, -50%)',
         }
     }
-
-    const placement = step.value?.placement ?? 'bottom'
-    const GAP = 16
-
-    let top: number, left: number
-
-    const sCenterX = r.left - PAD + (r.width  + PAD * 2) / 2
-    const sCenterY = r.top  - PAD + (r.height + PAD * 2) / 2
-
-    if (placement === 'center') {
-        top  = sCenterY - 110
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'bottom') {
-        top  = r.bottom + PAD + GAP
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'top') {
-        top  = r.top - PAD - GAP - 300
-        left = sCenterX - TOOLTIP_W / 2
-    } else if (placement === 'left') {
-        top  = sCenterY - 110
-        left = r.left - PAD - GAP - TOOLTIP_W
-    } else {
-        top  = sCenterY - 110
-        left = r.right + PAD + GAP
-    }
-
-    left = Math.max(TOOLTIP_MARGIN, Math.min(left, window.innerWidth  - TOOLTIP_W - TOOLTIP_MARGIN))
-    top  = Math.max(TOOLTIP_MARGIN, Math.min(top,  window.innerHeight - 240 - TOOLTIP_MARGIN))
-
+    const th = tooltipEl.value?.offsetHeight || 220
+    const { top, left } = computeTooltipPos(resolvedPlacement.value, r, TOOLTIP_W, th)
     return {
         position: 'fixed' as const,
         top:  `${top}px`,
@@ -282,7 +322,7 @@ async function handleBack() {
       />
 
       <!-- ── Tooltip card ────────────────────────────────────────────────── -->
-      <div v-show="tooltipVisible" class="tutorial-tooltip" :style="tooltipStyle">
+      <div ref="tooltipEl" v-show="tooltipVisible" class="tutorial-tooltip" :style="tooltipStyle">
         <div class="tutorial-progress">
           <span class="tutorial-step-num">Step {{ tutorial.currentStep + 1 }} of {{ STEP_COUNT }}</span>
           <button class="tutorial-skip" @click="tutorial.finish()">Skip tutorial</button>
