@@ -116,16 +116,32 @@ export function useMorse() {
 
     const playMorse = (text: string, wpm: number = WPM, frequency: number = FREQUENCY): void => {
         const { ctx, target } = getAudioGraph();
-        const RAMP_TIME = useSettingsStore().rampTime / 1000;
+        const settings = useSettingsStore();
+        const RAMP_TIME = settings.rampTime / 1000;
         const dit = 1200 / wpm / 1000;
 
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
 
+        // QSB (band fading): 5% chance per transmission when enabled.
+        // Insert a slow-fading gain node between the timing gain and the compressor
+        // so the signal dips mid-message and then recovers — audible but harder to copy.
+        const outputNode: AudioNode = (() => {
+            if (!settings.qsbEnabled || Math.random() >= 0.05) return target
+            const qsbGain = ctx.createGain()
+            qsbGain.connect(target)
+            const t0 = ctx.currentTime
+            qsbGain.gain.setValueAtTime(1.0, t0)
+            qsbGain.gain.setValueAtTime(1.0, t0 + 0.35)          // hold full strength briefly
+            qsbGain.gain.linearRampToValueAtTime(0.1, t0 + 2.0)  // fade down over ~1.6 s
+            qsbGain.gain.linearRampToValueAtTime(1.0, t0 + 4.5)  // recover over ~2.5 s
+            return qsbGain
+        })()
+
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
         oscillator.connect(gain);
-        gain.connect(target);
+        gain.connect(outputNode);
         gain.gain.setValueAtTime(0, ctx.currentTime);
 
         oscillator.start();

@@ -1,11 +1,13 @@
 <script lang="ts" setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { useMobileDetect } from '@/composables/useMobileDetect'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const props = defineProps<{
     modelValue: string
     expectedText: string
     hintLabel: string
+    callerCallsigns?: string[]
     readonly?: boolean
 }>()
 
@@ -15,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const { isMobile } = useMobileDetect()
+const settings = useSettingsStore()
 
 const inputEl = ref<HTMLElement | null>(null)
 const mobileInputEl = ref<HTMLInputElement | null>(null)
@@ -66,6 +69,19 @@ const typedChars = computed<DisplayChar[]>(() => {
     if (!expected) {
         return typed.split('').map(c => ({ char: c, state: 'plain' as const }))
     }
+    if (settings.relaxedSpacing) {
+        const strippedExpected = expected.replace(/\s+/g, '')
+        let nonSpaceIdx = 0
+        return typed.split('').map(c => {
+            if (c === ' ') return { char: c, state: 'plain' as const }
+            const e = strippedExpected[nonSpaceIdx++]
+            if (e === undefined) return { char: c, state: 'incorrect' as const }
+            return {
+                char: c,
+                state: charMatches(c.toUpperCase(), e.toUpperCase()) ? 'correct' as const : 'incorrect' as const,
+            }
+        })
+    }
     return typed.split('').map((c, i) => {
         const e = expected[i]
         if (e === undefined) return { char: c, state: 'incorrect' as const }
@@ -80,6 +96,20 @@ const hintChars = computed<DisplayChar[]>(() => {
     const typed    = normalize(props.modelValue)
     const expected = normalize(props.expectedText ?? '')
     if (!expected) return []
+    if (settings.relaxedSpacing) {
+        // Count non-space chars already typed, then find where they end in the
+        // original expected string so the hint shows canonical spacing.
+        const nonSpaceTypedLen = typed.split('').filter(c => c !== ' ').length
+        let nonSpaceCount = 0
+        let hintStart = expected.length
+        for (let i = 0; i < expected.length; i++) {
+            if (expected[i] !== ' ') {
+                if (nonSpaceCount === nonSpaceTypedLen) { hintStart = i; break }
+                nonSpaceCount++
+            }
+        }
+        return expected.slice(hintStart).split('').map(c => ({ char: c, state: 'hint' as const }))
+    }
     return expected.slice(typed.length).split('').map(c => ({ char: c, state: 'hint' as const }))
 })
 
@@ -99,7 +129,17 @@ watch(() => props.modelValue, async (val) => {
 
 <template>
   <div class="guided-input-wrapper" data-tutorial="guided-input">
-    <div class="guide-hint-label">{{ hintLabel }}</div>
+    <div class="guide-hint-label">
+      {{ hintLabel }}
+      <template v-if="callerCallsigns && callerCallsigns.length > 0 && settings.chatVisibility !== 'hide'">
+        <span
+          v-for="call in callerCallsigns"
+          :key="call"
+          class="caller-chip"
+          :class="{ 'caller-chip--blurred': settings.chatVisibility === 'blur' }"
+        >{{ call }}</span>
+      </template>
+    </div>
     <div class="guided-input-outer">
       <div
         ref="inputEl"
@@ -243,5 +283,26 @@ watch(() => props.modelValue, async (val) => {
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+}
+
+.caller-chip {
+    display: inline-block;
+    margin-left: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent-text);
+}
+
+.caller-chip--blurred {
+    filter: blur(5px);
+    transition: filter 0.2s ease;
+    cursor: default;
+    user-select: none;
+}
+
+.caller-chip--blurred:hover {
+    filter: blur(0);
 }
 </style>

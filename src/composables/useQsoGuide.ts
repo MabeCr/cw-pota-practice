@@ -9,6 +9,11 @@ export type GuidePhase =
     | { phase: 'wait_confirm'; hunter: Station }
     | { phase: 'close'; hunter: Station }
 
+// Module-level — persists across component unmount/remount (e.g. navigating to
+// Preferences and back). Reset when the activation context changes.
+const _phase = ref<GuidePhase>({ phase: 'cq' })
+let _activationKey = ''
+
 function getGreeting(): string {
     const hour = new Date().getHours()
     if (hour < 12) return 'GM'
@@ -40,7 +45,14 @@ export function useQsoGuide(
     activationPark: string,
     typedMessage: Ref<string>,
 ) {
-    const phase = ref<GuidePhase>({ phase: 'cq' })
+    // Reset the guide when a different activation is loaded, but preserve state
+    // across same-activation navigations (e.g. switching to Preferences and back).
+    const activationKey = `${activationCallsign}|${activationPark}`
+    if (activationKey !== _activationKey) {
+        _activationKey = activationKey
+        _phase.value = { phase: 'cq' }
+    }
+    const phase = _phase
 
     const expectedText = computed<string>(() => {
         const p = phase.value
@@ -88,13 +100,31 @@ export function useQsoGuide(
                 }
                 const calling = ai.getActiveStations().filter(s => s.qsoStep === 'HUNTER_CALL')
                 if (calling.length === 0) return 'Hunters are on the way, stand by...'
-                return `Hunters calling — pick one: ${calling.map(h => h.callsign).join(', ')}`
+                return 'Hunters calling — pick one:'
             }
             case 'wait_confirm':
                 return `Waiting for ${p.hunter.callsign} to send their report...`
             case 'close':
                 return `Close the QSO with ${p.hunter.callsign}${p.hunter.park2parkID ? ' (P2P)' : ''}`
         }
+    })
+
+    // The callsigns of hunters currently in HUNTER_CALL state, shown only during
+    // the pick_hunter phase when no specific hunter has been matched yet.
+    const callerCallsigns = computed<string[]>(() => {
+        const p = phase.value
+        if (p.phase !== 'pick_hunter') return []
+        const ai = getConversationAiService()
+        const firstWord = typedMessage.value.trim().toUpperCase().split(/\s+/)[0] ?? ''
+        if (firstWord) {
+            const matched = ai.getActiveStations().find(
+                s => s.callsign.toUpperCase() === firstWord && s.qsoStep === 'HUNTER_CALL',
+            )
+            if (matched) return []
+        }
+        return ai.getActiveStations()
+            .filter(s => s.qsoStep === 'HUNTER_CALL')
+            .map(s => s.callsign)
     })
 
     function isAllGreen(typed: string): boolean {
@@ -155,5 +185,5 @@ export function useQsoGuide(
         }
     }
 
-    return { phase, expectedText, hintLabel, isAllGreen, onUserSend, onHunterMessage }
+    return { phase, expectedText, hintLabel, callerCallsigns, isAllGreen, onUserSend, onHunterMessage }
 }

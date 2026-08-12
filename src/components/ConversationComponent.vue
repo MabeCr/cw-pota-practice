@@ -27,7 +27,7 @@ const stationAudioCache = new Map<string, { frequency: number; wpm: number }>();
 const message = ref('');
 const activeHuntersCount = ref(conversationAiService.getActiveStations().length);
 
-const { expectedText, hintLabel, onUserSend, onHunterMessage } = useQsoGuide(
+const { expectedText, hintLabel, callerCallsigns, onUserSend, onHunterMessage } = useQsoGuide(
     props.parkCallsign ?? settings.callsign,
     props.parkState ?? '',
     props.parkReference ?? '',
@@ -190,6 +190,7 @@ watch(
         v-model="message"
         :expected-text="expectedText"
         :hint-label="hintLabel"
+        :caller-callsigns="callerCallsigns"
         :readonly="readonly"
         @send="sendMessage"
       />
