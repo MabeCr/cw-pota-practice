@@ -295,6 +295,24 @@ onUnmounted(() => {
           </div>
 
           <div class="pref-row">
+            <label class="pref-label">QSB (Band Fading)</label>
+            <div class="segment-group">
+              <button
+                class="segment-btn"
+                :class="{ active: !settings.qsbEnabled }"
+                title="Hunter signals are always consistent"
+                @click="settings.setQsbEnabled(false)"
+              >Off</button>
+              <button
+                class="segment-btn"
+                :class="{ active: settings.qsbEnabled }"
+                title="5% of hunter transmissions randomly fade mid-message"
+                @click="settings.setQsbEnabled(true)"
+              >On</button>
+            </div>
+          </div>
+
+          <div class="pref-row">
             <label class="pref-label">Chat Messages</label>
             <div class="segment-group">
               <button
