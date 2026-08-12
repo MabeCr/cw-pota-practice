@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settingsStore'
 import {
     isPotaReference,
@@ -52,8 +52,19 @@ function selectPark(park: ParkEntry) {
     parkQuery.value = `${park.reference} — ${park.name}`
     parkState.value = park.states[0] ?? ''
     results.value = []
-    tutorial.notifyAction('park-selected')
+    if (tutorial.isActive) tutorial.setPendingParkRef(park.reference)
 }
+
+// Keep tutorial store in sync so canAdvance can validate field values
+watch(callsign,  (val) => { if (tutorial.isActive) tutorial.setPendingCallsign(val) })
+watch(parkState, (val) => { if (tutorial.isActive) tutorial.setPendingState(val) })
+
+onMounted(() => {
+    if (tutorial.isActive) {
+        tutorial.setPendingCallsign(callsign.value)
+        tutorial.setPendingState(parkState.value)
+    }
+})
 
 const canStart = computed(() => parkQuery.value.trim().length > 0 && callsign.value.trim().length > 0)
 
@@ -67,7 +78,7 @@ function handleStart() {
 </script>
 
 <template>
-  <div class="overlay" @click="emit('cancel')">
+  <div class="overlay" @click="!tutorial.isActive && emit('cancel')">
     <div class="dialog" data-tutorial="new-activation-dialog" @click.stop>
       <h2 class="dialog-title">New Activation</h2>
 
@@ -131,7 +142,7 @@ function handleStart() {
       </div>
 
       <div class="dialog-actions">
-        <button class="btn-cancel" @click="emit('cancel')">Cancel</button>
+        <button v-if="!tutorial.isActive" class="btn-cancel" @click="emit('cancel')">Cancel</button>
         <button class="btn-start" :disabled="!canStart" @click="handleStart" data-tutorial="start-activation-btn">
           Start Activation
         </button>

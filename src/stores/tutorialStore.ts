@@ -47,7 +47,7 @@ export const STEP_AWAIT_ROUTES: (string | null)[] = [
 // Which action name auto-advances each step (null = not action-gated)
 export const STEP_AWAIT_ACTIONS: (string | null)[] = [
     null, null, null,
-    'park-selected', // 3
+    null, // 3 — park-search is now validated via canAdvance + pendingParkRef
     null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
 ]
 
@@ -70,6 +70,10 @@ export const useTutorialStore = defineStore('tutorial', {
         tutorialActivationId: null as string | null,
         prevGuidedQsos: false,
         shouldOpenNewActivationDialog: false,
+        // Pending form fields — synced from NewActivationDialog so canAdvance can validate them
+        pendingParkRef:   '',
+        pendingCallsign:  '',
+        pendingState:     '',
     }),
 
     actions: {
@@ -114,8 +118,39 @@ export const useTutorialStore = defineStore('tutorial', {
             }
         },
 
+        setPendingParkRef(ref: string)  { this.pendingParkRef  = ref.toUpperCase() },
+        setPendingCallsign(cs: string)  { this.pendingCallsign = cs.toUpperCase() },
+        setPendingState(st: string)     { this.pendingState    = st.toUpperCase() },
+
         back() {
-            if (this.currentStep > 0) this.currentStep--
+            if (this.currentStep <= 0) return
+            const from = this.currentStep
+
+            if (this.tutorialActivationId) {
+                const store = useActivationStore()
+                // Going back from NEARLY_THERE undoes the 8 fake QSOs injected by
+                // advance() when leaving SEE_TABLE — keep only index 0 (the real N9MET QSO).
+                if (from === T.NEARLY_THERE) {
+                    const act = store.getById(this.tutorialActivationId)
+                    if (act) {
+                        const countToRemove = act.qsoList.length - 1
+                        for (let i = 0; i < countToRemove; i++) {
+                            store.deleteQso(this.tutorialActivationId, 1)
+                        }
+                    }
+                }
+                // Going back from LOG_TENTH removes the KM4BE QSO the user just logged
+                // so they can re-log it if they come forward again.
+                if (from === T.LOG_TENTH) {
+                    const act = store.getById(this.tutorialActivationId)
+                    const idx = act?.qsoList.findIndex(
+                        q => q.theirCall.toUpperCase() === 'KM4BE'
+                    ) ?? -1
+                    if (idx !== -1) store.deleteQso(this.tutorialActivationId, idx)
+                }
+            }
+
+            this.currentStep--
         },
 
         notifyAction(action: string) {
@@ -135,6 +170,9 @@ export const useTutorialStore = defineStore('tutorial', {
             getConversationAiService().disableTutorialMode()
             this.isActive = false
             this.completed = true
+            this.pendingParkRef  = ''
+            this.pendingCallsign = ''
+            this.pendingState    = ''
             localStorage.setItem(COMPLETED_KEY, 'true')
         },
     },
